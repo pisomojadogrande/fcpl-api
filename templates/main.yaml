@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: FCPL account access
+Parameters:
+    FCPLAccountId:
+        Type: String
+        AllowedPattern: "^[0-9]+$"
+    FCPLPassword:
+        Type: String
+        NoEcho: true
+Resources:
+    GetBooksExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    GetBooksFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                ZipFile:
+                    !Sub |
+                        exports.handler = (event, context, callback) => {
+                            callback(null, 'hello ' + process.env.FCPLAccountId);
+                        };
+            Environment:
+                Variables:
+                    FCPLAccountId: !Ref FCPLAccountId
+                    FPCLPassword: !Ref FCPLPassword
+            Handler: index.handler
+            Role: !GetAtt GetBooksExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 20
+Outputs:
+    GetBooksFunctionName:
+        Value: !Ref GetBooksFunction
+            
+        
