@@ -23,6 +23,20 @@ Resources:
                       Action: "sts:AssumeRole"
             ManagedPolicyArns:
                 - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                - PolicyName: S3BucketAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "s3:GetObject"
+                            - "s3:PutObject"
+                          Resource: !Sub "arn:aws:s3:::${S3Bucket}/cache/*"
+                        - Effect: Allow
+                          Action:
+                            - "s3:ListBucket"
+                          Resource: !Sub "arn:aws:s3:::${S3Bucket}"
     GetBooksFunction:
         Type: "AWS::Lambda::Function"
         Properties:
@@ -33,6 +47,8 @@ Resources:
                 Variables:
                     FCPLAccountId: !Ref FCPLAccountId
                     FPCLPassword: !Ref FCPLPassword
+                    S3Bucket: !Ref S3Bucket
+                    CachePrefix: "cache/TEST"
             Handler: index.handler
             Role: !GetAtt GetBooksExecutionRole.Arn
             Runtime: nodejs6.10
