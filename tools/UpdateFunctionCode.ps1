@@ -19,11 +19,12 @@ function UpdateFunctionCode(
    }
    
    $zipFileExists = Test-Path $zipFile
-   Compress-Archive -Path $indexJsPath -DestinationPath $zipFile -Update
    $nodeModulesExists = Test-Path $nodeModules
    if (($updateDeps -Or (-Not $zipFileExists)) -And (Test-Path $nodeModules)) {
-      Compress-Archive -Path $nodeModules -DestinationPath $zipFile -Update
+      Remove-Item $zipFile
+      Compress-Archive -Path $nodeModules -DestinationPath $zipFile
    }
+   Compress-Archive -Path $indexJsPath -DestinationPath $zipFile -Update
    
    $s3key = "functions/" + $function + "/code.zip"
    $s3path = "s3://" + $s3bucket + "/" + $s3key

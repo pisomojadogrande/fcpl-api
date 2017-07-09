@@ -46,7 +46,7 @@ Resources:
             Environment:
                 Variables:
                     FCPLAccountId: !Ref FCPLAccountId
-                    FPCLPassword: !Ref FCPLPassword
+                    FCPLPassword: !Ref FCPLPassword
                     S3Bucket: !Ref S3Bucket
                     CachePrefix: "cache/TEST"
             Handler: index.handler

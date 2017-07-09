@@ -72,21 +72,33 @@ function putInCache(content) {
     });
 }
 
-
+/*
 function fetchHtmlPromise(sessionId) {
     return new Promise((resolve, reject) => {
-        const postData = querystring.stringify({
-            user_id: process.env.FCPLAccountId,
-            password: process.env.FCPLPassword
-        });
+        
+        //const postData = querystring.stringify({
+        //    ps: sessionId + '/0/0/57/30',
+        //});
+        //console.log(postData);
+        
+        const postData = `ps=${sessionId}/0/0/57/30`;
         const httpsOptions = {
             hostname: 'fcplcat.fairfaxcounty.gov',
             port: 443,
-            path: '/uhtbin/cgisirsi/?ps=' + sessionId + '/0/0/57/30',
+            path: '/uhtbin/cgisirsi/',
             method: 'POST',
+            form: {
+                user_id: process.env.FCPLAccountId,
+                password: process.env.FCPLPassword
+            },
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(postData)
+                'Content-Length': Buffer.byteLength(postData),
+                'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                'Accept-Encoding': "gzip, deflate, br",
+                'Referer': "https://fcplcat.fairfaxcounty.gov/uhtbin/cgisirsi/0/0/0/57/30",
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
             }
         };
         
@@ -117,6 +129,21 @@ function fetchNew(sessionId) {
     return fetchHtmlPromise(sessionId).then(putInCache);
 }
 
+function parseHtmlPromise(content) {
+    return new Promise((resolve, reject) => {
+        const handler = new htmlparser.DefaultHandler((err, dom) => {
+            if (err) reject(err);
+            else {
+                //console.log(JSON.stringify(dom));
+                const form = htmlparser.DomUtils.getElementById('renewitems', dom);
+                resolve(form);
+            }
+        }, {verbose: false});
+        const parser = new htmlparser.Parser(handler);
+        parser.parseComplete(content);
+    });
+}
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
@@ -129,8 +156,9 @@ exports.handler = (event, context, callback) => {
         } else {
             return fetchNew(sessionId);
         }
-    }).then((content) => {
-        callback(null, `Response size ${content.length}`);
+    }).then(parseHtmlPromise)
+    .then((parsed) => {
+        callback(null, parsed);
     }).catch((e) => {
        callback(e); 
     });
