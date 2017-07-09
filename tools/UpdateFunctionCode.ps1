@@ -2,11 +2,14 @@ function UpdateFunctionCode(
     [Parameter(Mandatory=$True)][string]$stack,
     [Parameter(Mandatory=$True)][string]$function,
     [Parameter(Mandatory=$True)][string]$s3bucket,
+    [string] $codePath,
     [switch] $updateDeps
 )
 {
-   $codeDirName = $function + "Function"
-   $codePath = Join-Path "functions" $codeDirName
+   if (-Not $codePath) {
+     $codeDirName = $function + "Function"
+     $codePath = Join-Path "functions" $codeDirName
+   }
    $zipFile = Join-Path $codePath "code.zip"
    $indexJsPath = Join-Path $codePath "index.js"
    $nodeModules = Join-Path $codePath "node_modules"
@@ -14,9 +17,11 @@ function UpdateFunctionCode(
       echo "Missing $indexJsPath"
       Return
    }
+   
+   $zipFileExists = Test-Path $zipFile
    Compress-Archive -Path $indexJsPath -DestinationPath $zipFile -Update
    $nodeModulesExists = Test-Path $nodeModules
-   if ($updateDeps -And (Test-Path $nodeModules)) {
+   if (($updateDeps -Or (-Not $zipFileExists)) -And (Test-Path $nodeModules)) {
       Compress-Archive -Path $nodeModules -DestinationPath $zipFile -Update
    }
    
