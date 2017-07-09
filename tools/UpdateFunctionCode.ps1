@@ -1,33 +1,33 @@
 function UpdateFunctionCode(
     [Parameter(Mandatory=$True)][string]$stack,
     [Parameter(Mandatory=$True)][string]$function,
-    [Parameter(Mandatory=$True)][string]$s3bucket
+    [Parameter(Mandatory=$True)][string]$s3bucket,
+    [switch] $updateDeps
 )
 {
-   $tempFile = [System.IO.Path]::GetTempFileName() + ".zip"
    $codeDirName = $function + "Function"
    $codePath = Join-Path "functions" $codeDirName
+   $zipFile = Join-Path $codePath "code.zip"
    $indexJsPath = Join-Path $codePath "index.js"
    $nodeModules = Join-Path $codePath "node_modules"
    if (-Not (Test-Path $indexJsPath)) {
       echo "Missing $indexJsPath"
       Return
    }
-   Compress-Archive -Path $indexJsPath -DestinationPath $tempFile
+   Compress-Archive -Path $indexJsPath -DestinationPath $zipFile -Update
    $nodeModulesExists = Test-Path $nodeModules
-   if (Test-Path $nodeModules) {
-      Compress-Archive -Path $nodeModules -DestinationPath $tempFile -Update
+   if ($updateDeps -And (Test-Path $nodeModules)) {
+      Compress-Archive -Path $nodeModules -DestinationPath $zipFile -Update
    }
    
    $s3key = "functions/" + $function + "/code.zip"
    $s3path = "s3://" + $s3bucket + "/" + $s3key
-   aws s3 cp $tempFile $s3Path
+   aws s3 cp $zipFile $s3Path
    if (-Not ($?)) {
       echo "Error uploading to S3"
       Return
    }
-   Remove-Item $tempFile
-   echo "Uploaded to $s3Path"
+   echo "$zipFile uploaded to $s3Path"
 
    $stacksDescription = (aws cloudformation describe-stacks --stack-name $stack) | ConvertFrom-Json
    if (-Not ($stacksDescription)) {
