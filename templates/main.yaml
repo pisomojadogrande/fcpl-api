@@ -7,6 +7,8 @@ Parameters:
     FCPLPassword:
         Type: String
         NoEcho: true
+    S3Bucket:
+        Type: String
 Resources:
     GetBooksExecutionRole:
         Type: "AWS::IAM::Role"
@@ -25,11 +27,8 @@ Resources:
         Type: "AWS::Lambda::Function"
         Properties:
             Code:
-                ZipFile:
-                    !Sub |
-                        exports.handler = (event, context, callback) => {
-                            callback(null, 'hello ' + process.env.FCPLAccountId);
-                        };
+                S3Bucket: !Ref S3Bucket
+                S3Key: "functions/GetBooks/code.zip"
             Environment:
                 Variables:
                     FCPLAccountId: !Ref FCPLAccountId
@@ -37,7 +36,7 @@ Resources:
             Handler: index.handler
             Role: !GetAtt GetBooksExecutionRole.Arn
             Runtime: nodejs6.10
-            Timeout: 20
+            Timeout: 60
 Outputs:
     GetBooksFunctionName:
         Value: !Ref GetBooksFunction
