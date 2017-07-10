@@ -14,7 +14,7 @@ const MAX_CACHED_AGE_SECS = 60 * 60 * 12;
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
 
 
-function fetchFromCache() {
+function fetchFromCache(ctx) {
     return new Promise((resolve, reject) =>  {
         const params = {
             Bucket: S3_BUCKET,
@@ -25,33 +25,35 @@ function fetchFromCache() {
             if (err) {
                 console.error(`S3 error ${JSON.stringify(err)}`);
                 if (err.code == 'NoSuchKey') {
-                    resolve(null);
+                    resolve(ctx);
                 } else reject(err);
             } else {
-                const lastModified = Date.parse(data.LastModified);
+                const lastModified = new Date(data.LastModified);
                 const ageMsec = Date.now() - lastModified;
                 console.log(`Fetched ${data.ContentLength} bytes, age ${ageMsec / 1000} sec; last modified ${data.LastModified}`);
                 if (ageMsec > (1000 * MAX_CACHED_AGE_SECS)) {
                     console.log('Content too old; fetching new');
-                    resolve(null);
+                    resolve(ctx);
                 } else {
-                    resolve(data.Body.toString());
+                    ctx.content = data.Body.toString();
+                    ctx.lastModified = lastModified.toISOString();
+                    resolve(ctx);
                 }
             }
         })
     });
 }
 
-function putInCache(content) {
+function putInCache(ctx) {
     return new Promise((resolve, reject) => {
         // write to both latest.html and a timestamped key
         const timestampedKey = `${CACHE_PREFIX}/${(new Date()).toISOString()}-raw.html`;
-        console.log(`Writing ${content.length} to ${timestampedKey}, ${LATEST_KEY}`);
+        console.log(`Writing ${ctx.content.length} to ${timestampedKey}, ${LATEST_KEY}`);
         const promises = [LATEST_KEY, timestampedKey].map((s3key) => {
             const params = {
                 Bucket: S3_BUCKET,
                 Key: s3key,
-                Body: content
+                Body: ctx.content
             };
             return new Promise((innerResolve, innerReject) => {
                 s3.putObject(params, (err, data) => {
@@ -63,14 +65,14 @@ function putInCache(content) {
         return Promise.all(promises);
     }).then((allResults) => {
         console.log('Caching successful');
-        return Promise.resolve(content);
+        return Promise.resolve(ctx);
     }).catch((e) => {
         console.warn(`Error caching content; continuing: ${e}`);
-        return Promise.resolve(content);
+        return Promise.resolve(ctx);
     });
 }
 
-function obtainSessionPromise() {
+function obtainSessionPromise(ctx) {
     return new Promise((resolve, reject) => {
         const url = 'https://' + FCPL_HOSTNAME + '/uhtbin/cgisirsi/0/0/0/57/30';
         https.get(url, (res) => {
@@ -97,7 +99,8 @@ function obtainSessionPromise() {
                         } else {
                             const action = loginForms[0].attribs.action;
                             console.log(`Login action ${action}`);
-                            resolve(action);
+                            ctx.loginAction = action;
+                            resolve(ctx);
                         }
                     }
                 }, {verbose: false});
@@ -112,11 +115,11 @@ function obtainSessionPromise() {
 }
 
 
-function fetchHtmlPromise(loginAction) {
+function fetchHtmlPromise(ctx) {
     return new Promise((resolve, reject) => {
         
         // e.g. /uhtbin/cgisirsi/?ps=zMiGwqwXUF/0/0/57/30
-        const loginActionParts = loginAction.split('?');
+        const loginActionParts = ctx.loginAction.split('?');
         const path = loginActionParts[0];
         //const postData = '?' + loginActionParts[1];
         const postData = querystring.stringify({
@@ -127,7 +130,7 @@ function fetchHtmlPromise(loginAction) {
         const httpsOptions = {
             hostname: FCPL_HOSTNAME,
             port: 443,
-            path: loginAction,
+            path: ctx.loginAction,
             method: 'POST',
             form: {
                 user_id: process.env.FCPLAccountId,
@@ -156,7 +159,9 @@ function fetchHtmlPromise(loginAction) {
             });
             res.on('end', () => {
                 console.log(`Response length: ${responseBody.length}`);
-                resolve(responseBody);
+                ctx.content = responseBody;
+                ctx.lastModified = (new Date()).toISOString();
+                resolve(ctx);
             });
         });
         req.on('error', (e) => {
@@ -168,28 +173,31 @@ function fetchHtmlPromise(loginAction) {
     });
 }
 
-function parseHtmlPromise(content) {
-    console.log(`Parsing content, length=${content.length}`);
+function parseHtmlPromise(ctx) {
+    console.log(`Parsing content, length=${ctx.content.length}`);
     return new Promise((resolve, reject) => {
         const handler = new htmlparser.DefaultHandler((err, dom) => {
             if (err) reject(err);
-            else resolve(dom);
+            else {
+                ctx.dom = dom;
+                resolve(ctx);
+            }
         }, {verbose: false});
         const parser = new htmlparser.Parser(handler);
-        parser.parseComplete(content);
+        parser.parseComplete(ctx.content);
     });
 }
 
-function validateHtmlPromise(content) {
-    return parseHtmlPromise(content).then((dom) => {
+function validateHtmlPromise(ctx) {
+    return parseHtmlPromise(ctx).then((ctx) => {
         const errors = htmlparser.DomUtils.getElements({
             class: (val) => { return val && (val.indexOf('error') > -1); }
-        }, dom);
+        }, ctx.dom);
         if (errors.length > 0) {
             console.error(`HTML shows errors: ${JSON.stringify(errors)}`);
             return Promise.reject('HTML shows errors');
         } else {
-            return Promise.resolve(content);
+            return Promise.resolve(ctx);
         }
     });
 }
@@ -262,19 +270,24 @@ function itemsFromDom(dom) {
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
-    fetchFromCache().then((content) => {
-        if (content) {
-            return parseHtmlPromise(content);
+    const ctx = {};
+    fetchFromCache(ctx).then((ctx) => {
+        if (ctx.content) {
+            return parseHtmlPromise(ctx);
         } else {
-            return obtainSessionPromise()
+            return obtainSessionPromise(ctx)
                 .then(fetchHtmlPromise)
                 .then(validateHtmlPromise)
                 .then(putInCache)
                 .then(parseHtmlPromise);
         }
-    }).then((dom) => {
-        const items = itemsFromDom(dom);
-        callback(null, items);
+    }).then((ctx) => {
+        const items = itemsFromDom(ctx.dom);
+        var result = {
+            libraryItems: items,
+            lastModified: ctx.lastModified
+        };
+        callback(null, { body: result });
     }).catch((e) => {
        callback(e); 
     });
