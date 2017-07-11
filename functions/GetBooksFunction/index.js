@@ -14,7 +14,10 @@ const MAX_CACHED_AGE_SECS = 60 * 60 * 12;
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
 
 
-function fetchFromCache(ctx) {
+function fetchFromCache(ctx, forceRefresh) {
+    if (forceRefresh) {
+        return Promise.resolve(ctx);
+    }
     return new Promise((resolve, reject) =>  {
         const params = {
             Bucket: S3_BUCKET,
@@ -271,7 +274,8 @@ exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
     const ctx = {};
-    fetchFromCache(ctx).then((ctx) => {
+    const forceRefresh = event.queryStringParameters && event.queryStringParameters.forceRefresh;
+    fetchFromCache(ctx, forceRefresh).then((ctx) => {
         if (ctx.content) {
             return parseHtmlPromise(ctx);
         } else {
