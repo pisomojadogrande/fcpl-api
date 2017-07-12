@@ -8,13 +8,13 @@ const s3 = new AWS.S3();
 
 const S3_BUCKET = process.env.S3Bucket;
 const CACHE_PREFIX = process.env.CachePrefix;
-const LATEST_KEY = CACHE_PREFIX + "/latest.html";
+const LATEST_KEY = CACHE_PREFIX + "/latest.json";
 const MAX_CACHED_AGE_SECS = 60 * 60 * 12;
 
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
 
 
-function fetchFromCache(ctx, forceRefresh) {
+function fetchFromCachePromise(ctx, forceRefresh) {
     if (forceRefresh) {
         return Promise.resolve(ctx);
     }
@@ -39,6 +39,7 @@ function fetchFromCache(ctx, forceRefresh) {
                     resolve(ctx);
                 } else {
                     ctx.content = data.Body.toString();
+                    ctx.items = JSON.parse(ctx.content);
                     ctx.lastModified = lastModified.toISOString();
                     resolve(ctx);
                 }
@@ -50,13 +51,14 @@ function fetchFromCache(ctx, forceRefresh) {
 function putInCache(ctx) {
     return new Promise((resolve, reject) => {
         // write to both latest.html and a timestamped key
-        const timestampedKey = `${CACHE_PREFIX}/${(new Date()).toISOString()}-raw.html`;
-        console.log(`Writing ${ctx.content.length} to ${timestampedKey}, ${LATEST_KEY}`);
+        const timestampedKey = `${CACHE_PREFIX}/${(new Date()).toISOString()}.json`;
+        const itemsString = JSON.stringify(ctx.items);
+        console.log(`Writing ${itemsString.length} to ${timestampedKey}, ${LATEST_KEY}`);
         const promises = [LATEST_KEY, timestampedKey].map((s3key) => {
             const params = {
                 Bucket: S3_BUCKET,
                 Key: s3key,
-                Body: ctx.content
+                Body: itemsString
             };
             return new Promise((innerResolve, innerReject) => {
                 s3.putObject(params, (err, data) => {
@@ -176,33 +178,16 @@ function fetchHtmlPromise(ctx) {
     });
 }
 
-function parseHtmlPromise(ctx) {
-    console.log(`Parsing content, length=${ctx.content.length}`);
-    return new Promise((resolve, reject) => {
-        const handler = new htmlparser.DefaultHandler((err, dom) => {
-            if (err) reject(err);
-            else {
-                ctx.dom = dom;
-                resolve(ctx);
-            }
-        }, {verbose: false});
-        const parser = new htmlparser.Parser(handler);
-        parser.parseComplete(ctx.content);
-    });
-}
-
-function validateHtmlPromise(ctx) {
-    return parseHtmlPromise(ctx).then((ctx) => {
-        const errors = htmlparser.DomUtils.getElements({
-            class: (val) => { return val && (val.indexOf('error') > -1); }
-        }, ctx.dom);
-        if (errors.length > 0) {
-            console.error(`HTML shows errors: ${JSON.stringify(errors)}`);
-            return Promise.reject('HTML shows errors');
-        } else {
-            return Promise.resolve(ctx);
-        }
-    });
+function validateHtml(dom) {
+    const errors = htmlparser.DomUtils.getElements({
+        class: (val) => { return val && (val.indexOf('error') > -1); }
+    }, dom);
+    if (errors.length > 0) {
+        console.error(`HTML shows errors: ${JSON.stringify(errors)}`);
+        return false
+    } else {
+        return true;
+    }
 }
 
 function trimAndJoin(dom) {
@@ -270,30 +255,49 @@ function itemsFromDom(dom) {
     });
 }
 
+function parseHtmlPromise(ctx) {
+    console.log(`Parsing content, length=${ctx.content.length}`);
+    return new Promise((resolve, reject) => {
+        const handler = new htmlparser.DefaultHandler((err, dom) => {
+            if (err) reject(err);
+            else {
+                ctx.dom = dom;
+                if (validateHtml(dom)) {
+                    ctx.items = itemsFromDom(dom);
+                    console.log(JSON.stringify(ctx.items));
+                    resolve(ctx);
+                } else {
+                    reject('HTML contains errors')
+                }
+            }
+        }, {verbose: false});
+        const parser = new htmlparser.Parser(handler);
+        parser.parseComplete(ctx.content);
+    });
+}
+
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
     const ctx = {};
-    const forceRefresh = event.queryStringParameters && event.queryStringParameters.forceRefresh;
-    fetchFromCache(ctx, forceRefresh).then((ctx) => {
-        if (ctx.content) {
-            return parseHtmlPromise(ctx);
-        } else {
-            return obtainSessionPromise(ctx)
-                .then(fetchHtmlPromise)
-                .then(validateHtmlPromise)
-                .then(putInCache)
-                .then(parseHtmlPromise);
-        }
+    const forceRefresh = (event.queryStringParameters && event.queryStringParameters.forceRefresh);
+      
+    fetchFromCachePromise(ctx, forceRefresh).then((ctx) => {
+        if (ctx.items) return Promise.resolve(ctx);
+        else return obtainSessionPromise(ctx)
+                        .then(fetchHtmlPromise)
+                        .then(parseHtmlPromise)
+                        .then(putInCache);
     }).then((ctx) => {
-        const items = itemsFromDom(ctx.dom);
         var result = {
-            libraryItems: items,
+            libraryItems: ctx.items,
             lastModified: ctx.lastModified
         };
         callback(null, { body: result });
     }).catch((e) => {
-       callback(e); 
+        console.error(JSON.stringify(e));
+        callback(e); 
     });
  
 };
