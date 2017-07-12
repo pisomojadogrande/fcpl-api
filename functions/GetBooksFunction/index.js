@@ -33,7 +33,9 @@ function fetchFromCachePromise(ctx, forceRefresh) {
             } else {
                 const lastModified = new Date(data.LastModified);
                 const ageMsec = Date.now() - lastModified;
-                console.log(`Fetched ${data.ContentLength} bytes, age ${ageMsec / 1000} sec; last modified ${data.LastModified}`);
+                const etag = data.ETag.replace(/"/g, '');
+                console.log(`Fetched ${data.ContentLength} bytes etag=${etag}, age ${ageMsec / 1000} sec; last modified ${data.LastModified}`);
+                ctx.cachedETag = etag;
                 if (ageMsec > (1000 * MAX_CACHED_AGE_SECS)) {
                     console.log('Content too old; fetching new');
                     resolve(ctx);
@@ -48,17 +50,23 @@ function fetchFromCachePromise(ctx, forceRefresh) {
     });
 }
 
-function putInCache(ctx) {
+function putInCachePromise(ctx) {
+    const content = JSON.stringify(ctx.items);
+    const md5 = crypto.createHash('md5').update(content).digest('hex');
+    if (ctx.cachedETag && (ctx.cachedETag == md5)) {
+        console.log(`Cached content matches etag ${md5}; not updating`);
+        return Promise.resolve(ctx);
+    }
+    
     return new Promise((resolve, reject) => {
         // write to both latest.html and a timestamped key
         const timestampedKey = `${CACHE_PREFIX}/${(new Date()).toISOString()}.json`;
-        const itemsString = JSON.stringify(ctx.items);
-        console.log(`Writing ${itemsString.length} to ${timestampedKey}, ${LATEST_KEY}`);
+        console.log(`Writing ${content.length} etag=${md5} to ${timestampedKey}, ${LATEST_KEY}`);
         const promises = [LATEST_KEY, timestampedKey].map((s3key) => {
             const params = {
                 Bucket: S3_BUCKET,
                 Key: s3key,
-                Body: itemsString
+                Body: content
             };
             return new Promise((innerResolve, innerReject) => {
                 s3.putObject(params, (err, data) => {
@@ -80,6 +88,7 @@ function putInCache(ctx) {
 function obtainSessionPromise(ctx) {
     return new Promise((resolve, reject) => {
         const url = 'https://' + FCPL_HOSTNAME + '/uhtbin/cgisirsi/0/0/0/57/30';
+        console.log(`Making request to ${url} to get a session`);
         https.get(url, (res) => {
             var responseBody = "";
             res.setEncoding('utf8');
@@ -153,11 +162,11 @@ function fetchHtmlPromise(ctx) {
             }
         };
         
-        console.log(`Making request ${JSON.stringify(httpsOptions)}`);
+        console.log(`Making request to ${httpsOptions.hostname}${httpsOptions.path}`);
         var responseBody = "";
         const req = https.request(httpsOptions, (res) => {
-            console.log(`STATUS: ${res.statusCode}`);
-            console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+            //console.log(`STATUS: ${res.statusCode}`);
+            //console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
                 responseBody += chunk;
@@ -231,32 +240,31 @@ function itemsFromDom(dom) {
         }, tds[0])[0];
         item.renewId = td0Input.attribs.id;
         item.renewName = td0Input.attribs.name;
-        console.log(`Item ${index} id=${item.renewId} name=${item.renewName}`);
+        //console.log(`Item ${index} id=${item.renewId} name=${item.renewName}`);
         
         const td1Label = htmlparser.DomUtils.getElements({
             tag_name: 'label',
             'for': item.renewId
         }, tds[1])[0];
         item.friendly = trimAndJoin(td1Label);
-        console.log(`Item ${index} friendly=${item.friendly}`);
+        //console.log(`Item ${index} friendly=${item.friendly}`);
         
         const td2Strong = htmlparser.DomUtils.getElementsByTagName('strong', tds[2])[0];
         if (td2Strong.length > 0) {
             item.timesRenewed = trimAndJoin(td2Strong);
-            console.log(`Item ${index} timesRenewed=${item.timesRenewed}`);
+            //console.log(`Item ${index} timesRenewed=${item.timesRenewed}`);
         }
         
         const dueDate = trimAndJoin(tds[3]);
-        console.log(`Item ${index} dueDate=${dueDate}`);
+        //console.log(`Item ${index} dueDate=${dueDate}`);
         item.dueDate = new Date(dueDate);
         
-        console.info(`Item ${index}: ${JSON.stringify(item)}`);
+        //console.info(`Item ${index}: ${JSON.stringify(item)}`);
         return item;
     });
 }
 
 function parseHtmlPromise(ctx) {
-    console.log(`Parsing content, length=${ctx.content.length}`);
     return new Promise((resolve, reject) => {
         const handler = new htmlparser.DefaultHandler((err, dom) => {
             if (err) reject(err);
@@ -288,7 +296,7 @@ exports.handler = (event, context, callback) => {
         else return obtainSessionPromise(ctx)
                         .then(fetchHtmlPromise)
                         .then(parseHtmlPromise)
-                        .then(putInCache);
+                        .then(putInCachePromise);
     }).then((ctx) => {
         var result = {
             libraryItems: ctx.items,
