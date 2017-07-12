@@ -9,6 +9,12 @@ Parameters:
         NoEcho: true
     S3Bucket:
         Type: String
+    MaxCacheAgeHours:
+        Type: Number
+        Default: 10
+    BackgroundRefreshIntervalHours:
+        Type: Number
+        Default: 12
 Resources:
     GetBooksExecutionRole:
         Type: "AWS::IAM::Role"
@@ -49,12 +55,28 @@ Resources:
                     FCPLPassword: !Ref FCPLPassword
                     S3Bucket: !Ref S3Bucket
                     CachePrefix: "cache/TEST"
+                    MaxCacheAgeHours: !Ref MaxCacheAgeHours
             Handler: index.handler
             Role: !GetAtt GetBooksExecutionRole.Arn
             Runtime: nodejs6.10
             Timeout: 60
+    GetBooksBackgroundRefreshPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref GetBooksFunction
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt BackgroundRefreshRule.Arn
+    BackgroundRefreshRule:
+        Type: "AWS::Events::Rule"
+        Properties:
+            Description: !Sub "Refreshes the cache every ${BackgroundRefreshIntervalHours} hours"
+            ScheduleExpression: !Sub "rate(${BackgroundRefreshIntervalHours} hours)"
+            State: ENABLED
+            Targets:
+                - Arn: !GetAtt GetBooksFunction.Arn
+                  Id: GetBooksFunctionScheduleTarget
 Outputs:
     GetBooksFunctionName:
         Value: !Ref GetBooksFunction
-            
         

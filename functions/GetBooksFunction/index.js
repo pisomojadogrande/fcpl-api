@@ -9,7 +9,7 @@ const s3 = new AWS.S3();
 const S3_BUCKET = process.env.S3Bucket;
 const CACHE_PREFIX = process.env.CachePrefix;
 const LATEST_KEY = CACHE_PREFIX + "/latest.json";
-const MAX_CACHED_AGE_SECS = 60 * 60 * 12;
+const MAX_CACHED_AGE_SECS = 3600 * process.env.MaxCacheAgeHours;
 
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
 
@@ -51,7 +51,7 @@ function fetchFromCachePromise(ctx, forceRefresh) {
 }
 
 function putInCachePromise(ctx) {
-    const content = JSON.stringify(ctx.items);
+    const content = JSON.stringify(ctx.items, null, 2);
     const md5 = crypto.createHash('md5').update(content).digest('hex');
     if (ctx.cachedETag && (ctx.cachedETag == md5)) {
         console.log(`Cached content matches etag ${md5}; not updating`);
@@ -272,7 +272,6 @@ function parseHtmlPromise(ctx) {
                 ctx.dom = dom;
                 if (validateHtml(dom)) {
                     ctx.items = itemsFromDom(dom);
-                    console.log(JSON.stringify(ctx.items));
                     resolve(ctx);
                 } else {
                     reject('HTML contains errors')
@@ -302,6 +301,7 @@ exports.handler = (event, context, callback) => {
             libraryItems: ctx.items,
             lastModified: ctx.lastModified
         };
+        console.log(JSON.stringify(result));
         callback(null, { body: result });
     }).catch((e) => {
         console.error(JSON.stringify(e));
