@@ -163,6 +163,7 @@ function fetchHtmlPromise(ctx) {
         };
         
         console.log(`Making request to ${httpsOptions.hostname}${httpsOptions.path}`);
+        //console.log(JSON.stringify(httpsOptions));
         var responseBody = "";
         const req = https.request(httpsOptions, (res) => {
             //console.log(`STATUS: ${res.statusCode}`);
@@ -206,7 +207,8 @@ function trimAndJoin(dom) {
     }).join(' ');
 }
 
-function itemsFromDom(dom) {
+function readFromDom(dom) {
+    const result = {};
     const renewitemsForms = htmlparser.DomUtils.getElements({
         tag_name: 'form',
         id: 'renewitems'
@@ -216,13 +218,15 @@ function itemsFromDom(dom) {
         return null;
     }
     const renewitemsForm = renewitemsForms[0];
-    const renewAction = renewitemsForm.attribs.action;
+    result.renewAction = renewitemsForm.attribs.action;
+    
     const renewCharge = htmlparser.DomUtils.getElementById('renewcharge', renewitemsForm);
     if (!renewCharge) {
         console.info('No renewcharge element');
-        return [];
+        return result;
     }
-    return htmlparser.DomUtils.getElementsByTagName('tr', renewCharge).map((row) => {
+    
+    result.items = htmlparser.DomUtils.getElementsByTagName('tr', renewCharge).map((row) => {
         return tds = htmlparser.DomUtils.getElementsByTagName('td', row);
     }).filter((tds) => {
         if (tds.length < 4) {
@@ -262,6 +266,7 @@ function itemsFromDom(dom) {
         //console.info(`Item ${index}: ${JSON.stringify(item)}`);
         return item;
     });
+    return result;
 }
 
 function parseHtmlPromise(ctx) {
@@ -271,7 +276,9 @@ function parseHtmlPromise(ctx) {
             else {
                 ctx.dom = dom;
                 if (validateHtml(dom)) {
-                    ctx.items = itemsFromDom(dom);
+                    const readResult = readFromDom(dom);
+                    ctx.items = readResult.items;
+                    ctx.renewAction = readResult.renewAction;
                     resolve(ctx);
                 } else {
                     reject('HTML contains errors')
@@ -301,6 +308,9 @@ exports.handler = (event, context, callback) => {
             libraryItems: ctx.items,
             lastModified: ctx.lastModified
         };
+        if (forceRefresh) {
+            result.renewAction = ctx.renewAction;
+        }
         console.log(JSON.stringify(result));
         callback(null, { body: result });
     }).catch((e) => {
