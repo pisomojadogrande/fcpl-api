@@ -16,6 +16,40 @@ Parameters:
         Type: Number
         Default: 12
 Resources:
+    FcplApi:
+        Type: "AWS::ApiGateway::RestApi"
+        Properties:
+            Description: FCPL API
+            Name: FCPLApi
+    FcplApiBooksResource:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ParentId: !GetAtt FcplApi.RootResourceId
+            PathPart: books
+    FcplApiBooksGet:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: GET
+            Integration:
+                IntegrationHttpMethod: POST
+                Type: "AWS_PROXY"
+                Uri: !Sub
+                    - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaResourceArn}/invocations"
+                    - { LambdaResourceArn: !GetAtt GetBooksFunction.Arn }
+    FcplApiDeployment:
+        Type: "AWS::ApiGateway::Deployment"
+        DependsOn: FcplApiBooksGet
+        Properties:
+            RestApiId: !Ref FcplApi
+            Description: Test deployment
+            StageName: test
+    FcplApiStage:
+        Type: "AWS::ApiGateway::Stage"
+        Properties:
+            Name: test
+            RestApiId: !Ref FcplApi
+            DeploymentId: !Ref FcplApiDeployment
     GetBooksExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -60,6 +94,13 @@ Resources:
             Role: !GetAtt GetBooksExecutionRole.Arn
             Runtime: nodejs6.10
             Timeout: 60
+    GetBooksApiPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref GetBooksFunction
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/books"
     GetBooksBackgroundRefreshPermission:
         Type: "AWS::Lambda::Permission"
         Properties:
