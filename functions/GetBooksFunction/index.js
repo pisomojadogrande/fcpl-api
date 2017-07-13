@@ -13,6 +13,11 @@ const MAX_CACHED_AGE_SECS = 3600 * process.env.MaxCacheAgeHours;
 
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
 
+ACAO_HEADERS = {
+    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    'Access-Control-Allow-Origin': '*'
+}
 
 function fetchFromCachePromise(ctx, forceRefresh) {
     if (forceRefresh) {
@@ -312,7 +317,11 @@ exports.handler = (event, context, callback) => {
             result.renewAction = ctx.renewAction;
         }
         console.log(JSON.stringify(result));
-        callback(null, { body: result });
+        callback(null, {
+            statusCode: 200,
+            headers: ACAO_HEADERS,
+            body: JSON.stringify(result)
+        });
     }).catch((e) => {
         console.error(JSON.stringify(e));
         callback(e); 
