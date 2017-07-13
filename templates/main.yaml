@@ -20,7 +20,7 @@ Resources:
         Type: "AWS::ApiGateway::RestApi"
         Properties:
             Description: FCPL API
-            Name: FCPLApi
+            Name: "fcpl-api"
     FcplApiBooksResource:
         Type: "AWS::ApiGateway::Resource"
         Properties:
@@ -30,24 +30,54 @@ Resources:
     FcplApiBooksGet:
         Type: "AWS::ApiGateway::Method"
         Properties:
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiBooksResource
             HttpMethod: GET
+            AuthorizationType: NONE
             Integration:
                 IntegrationHttpMethod: POST
-                Type: "AWS_PROXY"
-                Uri: !Sub
-                    - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaResourceArn}/invocations"
-                    - { LambdaResourceArn: !GetAtt GetBooksFunction.Arn }
+                Type: AWS_PROXY
+                Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetBooksFunction.Arn}/invocations
+    FcplApiBooksOptions:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            AuthorizationType: NONE
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiBooksResource
+            HttpMethod: OPTIONS
+            Integration:
+                IntegrationResponses:
+                    - StatusCode: 200
+                      ResponseParameters:
+                        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                        method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+                      ResponseTemplates:
+                        application/json: ''
+                PassthroughBehavior: WHEN_NO_MATCH
+                RequestTemplates:
+                    application/json: '{"statusCode": 200}'
+                Type: MOCK
+            MethodResponses:
+                - StatusCode: 200
+                  ResponseModels:
+                    application/json: 'Empty'
+                  ResponseParameters:
+                    method.response.header.Access-Control-Allow-Headers: false
+                    method.response.header.Access-Control-Allow-Methods: false
+                    method.response.header.Access-Control-Allow-Origin: false
     FcplApiDeployment:
         Type: "AWS::ApiGateway::Deployment"
-        DependsOn: FcplApiBooksGet
+        DependsOn:
+            - FcplApiBooksGet
+            - FcplApiBooksOptions
         Properties:
             RestApiId: !Ref FcplApi
             Description: Test deployment
-            StageName: test
     FcplApiStage:
         Type: "AWS::ApiGateway::Stage"
         Properties:
-            Name: test
+            StageName: test
             RestApiId: !Ref FcplApi
             DeploymentId: !Ref FcplApiDeployment
     GetBooksExecutionRole:
