@@ -1,3 +1,5 @@
 *.komodoproject
 node_modules
+dist
 code.zip
+www/properties.json

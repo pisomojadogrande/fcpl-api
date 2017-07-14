@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My App</title>
+    <script src="https://use.fontawesome.com/4e58c74786.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css">
+    <!--[if lte IE 8]>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-old-ie-min.css">
+    <![endif]-->
+    <!--[if gt IE 8]><!-->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-min.css">
+    <!--<![endif]-->
+</head>
+<body>
+  <h1 id="endpointText" style="display: none">
+    <%= htmlWebpackPlugin.options.metadata.endpoint %>
+  </h1>
+  <div id="app"></div>
+</body>
+</html>
