@@ -148,6 +148,8 @@ Resources:
                 - Arn: !GetAtt GetBooksFunction.Arn
                   Id: GetBooksFunctionScheduleTarget
 Outputs:
+    FcplApiEndpoint:
+        Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
     GetBooksFunctionName:
         Value: !Ref GetBooksFunction
         
