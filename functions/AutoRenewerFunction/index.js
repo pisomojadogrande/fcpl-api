@@ -4,6 +4,7 @@ const querystring = require('querystring');
 
 
 const lambda = new AWS.Lambda();
+const sns = new AWS.SNS();
 
 const TOLERANCE_DAYS = 2;
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
@@ -115,6 +116,33 @@ function collectRenewalResults(oldItems, newItems) {
     });
 }
 
+function snsPublishPromise(books) {
+    return new Promise((resolve, reject) => {
+        const successfulRenewals = [];
+        const unsuccessfulRenewals = [];
+        books.forEach((book) => {
+            if (book.status == 'SUCCESS') {
+                successfulRenewals.push(book);
+            } else {
+                unsuccessfulRenewals.push(book);
+            }
+        });
+        message = `Attempted ${books.length} renewals.\nSuccessful renewals:\n${JSON.stringify(successfulRenewals, null, 2)}\nUnsuccessful renewals:\n${JSON.stringify(unsuccessfulRenewals, null, 2)}`;
+        console.log(`Publishing message to topic ${process.env.SNSTopicArn}`);
+        console.log(`Message: ${message}`);
+        
+        const params = {
+            TopicArn: process.env.SNSTopicArn,
+            Subject: `Renewal status for ${(new Date()).toString()}`,
+            Message: message
+        };
+        sns.publish(params, (err, data) => {
+            if (err) reject(err);
+            else resolve(books);
+        });
+    })
+}
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
 
@@ -143,6 +171,8 @@ exports.handler = (event, context, callback) => {
     }).then((response) => {
         const result = collectRenewalResults(booksToRenew, response.libraryItems);
         console.log(JSON.stringify(result));
+        return snsPublishPromise(result);
+    }).then((result) => {
         callback(null, result);
     }).catch((e) => {
         callback(e);

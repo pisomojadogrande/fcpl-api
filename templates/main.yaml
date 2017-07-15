@@ -15,6 +15,9 @@ Parameters:
     BackgroundRenewIntervalHours:
         Type: Number
         Default: 12
+    NotificationEmail:
+        Type: String
+        Default: 'your@email.com'
 Resources:
     FcplApi:
         Type: "AWS::ApiGateway::RestApi"
@@ -153,6 +156,14 @@ Resources:
                           Action:
                             - "lambda:InvokeFunction"
                           Resource: !GetAtt GetBooksFunction.Arn
+                - PolicyName: SNSTopicPublishAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "sns:Publish"
+                          Resource: !Ref RenewalNotificationTopic
     AutoRenewerFunction:
         Type: "AWS::Lambda::Function"
         Properties:
@@ -163,6 +174,7 @@ Resources:
                 Variables:
                     FCPLAccountId: !Ref FCPLAccountId
                     GetBooksFunctionName: !Ref GetBooksFunction
+                    SNSTopicArn: !Ref RenewalNotificationTopic
             Handler: index.handler
             Role: !GetAtt AutoRenewerExecutionRole.Arn
             Runtime: nodejs6.10
@@ -183,6 +195,12 @@ Resources:
             Targets:
                 - Arn: !GetAtt AutoRenewerFunction.Arn
                   Id: RenewerFunctionScheduleTarget
+    RenewalNotificationTopic:
+        Type: "AWS::SNS::Topic"
+        Properties:
+            Subscription:
+                - Endpoint: !Ref NotificationEmail
+                  Protocol: email
 Outputs:
     FcplApiEndpoint:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
