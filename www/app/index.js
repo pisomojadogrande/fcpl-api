@@ -12,14 +12,12 @@ const Styles = {
         backgroundColor: 'purple',
         color: 'white'
     },
-    centerPanelStyle: {
-    },
     tableStyle: {
         marginTop: '20px',
-        marginBottom: '50px',
+        marginBottom: '5px',
         marginLeft: 'auto',
         marginRight: 'auto',
-        width: '80%'
+        width: '100%'
     }
 };
 
@@ -34,11 +32,11 @@ var BooksTable = React.createClass({
                     dueDate: 'loading',
                     key: 'LOADING_KEY'
                 }
-            ]
+            ],
+            lastModified: 'unknown'
         };
     },
-    getBooksResponseToBooks: function(responseText) {
-        const response = JSON.parse(responseText);
+    getBooksResponseToBooks: function(response) {
         return response.libraryItems.map((item) => {
             const friendly = item.friendly.replace(/&nbsp;/g, '');
             const dueDate = new Date(item.dueDate);
@@ -54,9 +52,11 @@ var BooksTable = React.createClass({
         const req = new XMLHttpRequest();
         const that = this;
         req.addEventListener('load', function() {
+            const response = JSON.parse(this.responseText);
             that.setState({
                 isLoading: false,
-                books: that.getBooksResponseToBooks(this.responseText)
+                books: that.getBooksResponseToBooks(response),
+                lastModified: (new Date(response.lastModified)).toString()
             });
         });
         req.open('GET', this.props.endpoint + '/books');
@@ -103,6 +103,9 @@ var BooksTable = React.createClass({
                     </thead>
                     <tbody>{tableRows}</tbody>
                 </table>
+                <div style={{textAlign: 'right'}}>
+                    Last modified: {this.state.lastModified}
+                </div>
             </div>
         );
     }
@@ -117,9 +120,11 @@ var Main = React.createClass({
                 </div>
                 <div className="pure-u-1-8" style={Styles.sidebarStyle}>
                 </div>
-                <div className="pure-u-3-4" style={Styles.centerPanelStyle}>
+                <div className="pure-u-1-8"></div>
+                <div className="pure-u-1-2">
                     <BooksTable endpoint={this.props.endpoint}/>
                 </div>
+                <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-8" style={Styles.sidebarStyle}>
                 </div>
             </div>
