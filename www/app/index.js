@@ -74,7 +74,7 @@ var BooksTable = React.createClass({
                 col0 = spinner;
             } else {
                 col0 = (
-                    <button className="pure-button">
+                    <button className="pure-button pure-button-disabled">
                         <i className="fa fa-thumbs-up" style={{paddingRight: '3px'}}></i>
                         renew
                     </button>
