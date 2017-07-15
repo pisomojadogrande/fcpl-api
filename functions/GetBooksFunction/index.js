@@ -58,16 +58,20 @@ function fetchFromCachePromise(ctx, forceRefresh) {
 function putInCachePromise(ctx) {
     const content = JSON.stringify(ctx.items, null, 2);
     const md5 = crypto.createHash('md5').update(content).digest('hex');
-    if (ctx.cachedETag && (ctx.cachedETag == md5)) {
-        console.log(`Cached content matches etag ${md5}; not updating`);
-        return Promise.resolve(ctx);
+    const isContentChanged = !(ctx.cachedETag && (ctx.cachedETag == md5));
+    if (!isContentChanged) {
+        console.log(`Cached content matches etag ${md5}`);
     }
     
     return new Promise((resolve, reject) => {
-        // write to both latest.html and a timestamped key
-        const timestampedKey = `${CACHE_PREFIX}/${(new Date()).toISOString()}.json`;
-        console.log(`Writing ${content.length} etag=${md5} to ${timestampedKey}, ${LATEST_KEY}`);
-        const promises = [LATEST_KEY, timestampedKey].map((s3key) => {
+        // write to both latest.html and a timestamped key;
+        // the timestamped key only if something has changed
+        const keys = [LATEST_KEY];
+        if (isContentChanged) {
+            keys.push(`${CACHE_PREFIX}/${(new Date()).toISOString()}.json`);  
+        }
+        console.log(`Writing ${content.length} etag=${md5} to ${JSON.stringify(keys)}`);
+        const promises = keys.map((s3key) => {
             const params = {
                 Bucket: S3_BUCKET,
                 Key: s3key,
