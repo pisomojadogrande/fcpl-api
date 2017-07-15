@@ -12,7 +12,7 @@ Parameters:
     MaxCacheAgeHours:
         Type: Number
         Default: 10
-    BackgroundRefreshIntervalHours:
+    BackgroundRenewIntervalHours:
         Type: Number
         Default: 12
 Resources:
@@ -131,13 +131,6 @@ Resources:
             FunctionName: !Ref GetBooksFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/books"
-    GetBooksBackgroundRefreshPermission:
-        Type: "AWS::Lambda::Permission"
-        Properties:
-            Action: "lambda:InvokeFunction"
-            FunctionName: !Ref GetBooksFunction
-            Principal: "events.amazonaws.com"
-            SourceArn: !GetAtt BackgroundRefreshRule.Arn
     AutoRenewerExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -174,15 +167,22 @@ Resources:
             Role: !GetAtt AutoRenewerExecutionRole.Arn
             Runtime: nodejs6.10
             Timeout: 120
-    BackgroundRefreshRule:
+    AutoRenewerRulePermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref AutoRenewerFunction
+            Principal: "events.amazonaws.com"
+            SourceArn: !GetAtt BackgroundRenewRule.Arn
+    BackgroundRenewRule:
         Type: "AWS::Events::Rule"
         Properties:
-            Description: !Sub "Refreshes the cache every ${BackgroundRefreshIntervalHours} hours"
-            ScheduleExpression: !Sub "rate(${BackgroundRefreshIntervalHours} hours)"
+            Description: !Sub "Renews books close to expiration every ${BackgroundRenewIntervalHours} hours"
+            ScheduleExpression: !Sub "rate(${BackgroundRenewIntervalHours} hours)"
             State: ENABLED
             Targets:
-                - Arn: !GetAtt GetBooksFunction.Arn
-                  Id: GetBooksFunctionScheduleTarget
+                - Arn: !GetAtt AutoRenewerFunction.Arn
+                  Id: RenewerFunctionScheduleTarget
 Outputs:
     FcplApiEndpoint:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
