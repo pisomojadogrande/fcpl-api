@@ -5,7 +5,7 @@ const querystring = require('querystring');
 
 const lambda = new AWS.Lambda();
 
-const TOLERANCE_DAYS = 1;
+const TOLERANCE_DAYS = 2;
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
 
 function invokeGetBooksPromise() {
