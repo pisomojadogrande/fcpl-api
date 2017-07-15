@@ -263,9 +263,9 @@ function readFromDom(dom) {
         //console.log(`Item ${index} friendly=${item.friendly}`);
         
         const td2Strong = htmlparser.DomUtils.getElementsByTagName('strong', tds[2])[0];
-        if (td2Strong.length > 0) {
+        if (td2Strong) {
             item.timesRenewed = trimAndJoin(td2Strong);
-            //console.log(`Item ${index} timesRenewed=${item.timesRenewed}`);
+            console.log(`Item ${index} elt=${JSON.stringify(td2Strong)} timesRenewed=${item.timesRenewed}`);
         }
         
         const dueDate = trimAndJoin(tds[3]);
