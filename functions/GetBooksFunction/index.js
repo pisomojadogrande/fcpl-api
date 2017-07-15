@@ -141,10 +141,6 @@ function obtainSessionPromise(ctx) {
 function fetchHtmlPromise(ctx) {
     return new Promise((resolve, reject) => {
         
-        // e.g. /uhtbin/cgisirsi/?ps=zMiGwqwXUF/0/0/57/30
-        const loginActionParts = ctx.loginAction.split('?');
-        const path = loginActionParts[0];
-        //const postData = '?' + loginActionParts[1];
         const postData = querystring.stringify({
             user_id: process.env.FCPLAccountId,
             password: process.env.FCPLPassword
@@ -153,21 +149,11 @@ function fetchHtmlPromise(ctx) {
         const httpsOptions = {
             hostname: FCPL_HOSTNAME,
             port: 443,
-            path: ctx.loginAction,
+            path: ctx.loginAction, // e.g. /uhtbin/cgisirsi/?ps=zMiGwqwXUF/0/0/57/30
             method: 'POST',
-            form: {
-                user_id: process.env.FCPLAccountId,
-                password: process.env.FCPLPassword
-            },
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(postData),
-                'User-Agent': "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0",
-                'Accept': "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                'Accept-Encoding': "gzip, deflate, br",
-                'Referer': "https://fcplcat.fairfaxcounty.gov/uhtbin/cgisirsi/0/0/0/57/30",
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+                'Content-Length': Buffer.byteLength(postData)
             }
         };
         
