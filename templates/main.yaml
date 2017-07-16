@@ -37,6 +37,8 @@ Resources:
             ResourceId: !Ref FcplApiBooksResource
             HttpMethod: GET
             AuthorizationType: NONE
+            RequestParameters:
+                "method.request.querystring.forceRefresh": false
             Integration:
                 IntegrationHttpMethod: POST
                 Type: AWS_PROXY
