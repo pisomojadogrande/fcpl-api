@@ -1,12 +1,17 @@
 var config = require(__dirname + '/properties.json');
-var HtmlWebpackPlugin = require('html-webpack-plugin')
+var webpack = require('webpack');
+var HtmlWebpackPlugin = require('html-webpack-plugin');
+
 var HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
   template: __dirname + '/app/index.html',
   filename: 'index.html',
-  inject: 'body',
-  metadata: config
+  inject: 'body'
 });
-console.log(JSON.stringify(HTMLWebpackPluginConfig));
+console.log('HTMLWebpackPlugin: ' + JSON.stringify(HTMLWebpackPluginConfig));
+
+var DefinePlugin = new webpack.DefinePlugin(config);
+console.log('DefinePlugin: ' + JSON.stringify(DefinePlugin));
+
 module.exports = {
   entry: [
     './app/index.js'
@@ -27,5 +32,5 @@ module.exports = {
       }
     ]
   },
-  plugins: [HTMLWebpackPluginConfig]
+  plugins: [HTMLWebpackPluginConfig, DefinePlugin]
 };

@@ -19,9 +19,10 @@ function WriteSiteProperties(
       echo "Could not find an FcplApiEndpoint output in stack $stack"
       Return
    }
-   $endpoint = $endpointOutput.OutputValue
+   $endpoint = '\"' + $endpointOutput.OutputValue + '\"'
    echo "Endpoint: $endpoint"
    
-   $props = @{endpoint = $endpoint}
+   # FIXME: This outputs a file with a BOM, which webpack can't read
+   $props = @{FCPL_API_ENDPOINT = $endpoint}
    ConvertTo-Json $props > $propsFile   
 }

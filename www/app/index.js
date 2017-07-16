@@ -131,6 +131,7 @@ var BooksTable = React.createClass({
 
 var Main = React.createClass({
     render: function() {
+        const endpoint = FCPL_API_ENDPOINT;
         return (
             <div className="pure-g">
                 <div className="pure-u-1" style={Styles.titlebarStyle}>
@@ -140,7 +141,7 @@ var Main = React.createClass({
                 </div>
                 <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-2">
-                    <BooksTable endpoint={this.props.endpoint}/>
+                    <BooksTable endpoint={endpoint}/>
                 </div>
                 <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-8" style={Styles.sidebarStyle}>
@@ -150,6 +151,4 @@ var Main = React.createClass({
     }
 });
 
-const appElement = document.getElementById('app');
-const endpointText = document.getElementById('endpointText').innerHTML.trim();
-ReactDOM.render(<Main endpoint={endpointText} />, appElement);
+ReactDOM.render(<Main />, document.getElementById('app'));
