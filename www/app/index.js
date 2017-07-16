@@ -18,23 +18,27 @@ const Styles = {
         marginLeft: 'auto',
         marginRight: 'auto',
         width: '100%'
+    },
+    inlineIconStyle: {
+        paddingRight: '3px'
     }
 };
 
 var BooksTable = React.createClass({
+    loadingState: {
+        isLoading: true,
+        books: [
+            {
+                title: 'loading',
+                timesRenewed: 0,
+                dueDate: 'loading',
+                key: 'LOADING_KEY'
+            }
+        ],
+        lastModified: 'unknown'
+    },
     getInitialState: function() {
-        return {
-            isLoading: true,
-            books: [
-                {
-                    title: 'loading',
-                    timesRenewed: 0,
-                    dueDate: 'loading',
-                    key: 'LOADING_KEY'
-                }
-            ],
-            lastModified: 'unknown'
-        };
+        return this.loadingState;
     },
     getBooksResponseToBooks: function(response) {
         return response.libraryItems.map((item) => {
@@ -48,7 +52,7 @@ var BooksTable = React.createClass({
             };
         });
     },
-    componentDidMount: function() {
+    startLoad: function(forceRefresh) {
         const req = new XMLHttpRequest();
         const that = this;
         req.addEventListener('load', function() {
@@ -59,15 +63,29 @@ var BooksTable = React.createClass({
                 lastModified: (new Date(response.lastModified)).toString()
             });
         });
-        req.open('GET', this.props.endpoint + '/books');
+        var url = this.props.endpoint + '/books';
+        if (forceRefresh) {
+            url += '?forceRefresh=true';
+        }
+        req.open('GET', url);
         req.send();
     },
-    onBooksLoaded: function() {
-        
+    componentDidMount: function() {
+        this.startLoad();
+    },
+    onRefreshClicked: function() {
+        this.startLoad(true);
+        this.setState(this.loadingState);
     },
     render: function() {
         var spinner = <i className="fa fa-refresh fa-spin fa-fw"></i>;
-        var headerCol0 = this.state.isLoading ? spinner : null;
+        var refreshButton = (
+            <button className="pure-button" onClick={this.onRefreshClicked}>
+                <i className="fa fa-refresh" style={Styles.inlineIconStyle}></i>
+                refresh
+            </button>
+        );
+        var headerCol0 = this.state.isLoading ? spinner : refreshButton;
         var tableRows = this.state.books.map((book) => {
             var col0;
             if (this.state.isLoading) {
@@ -75,7 +93,7 @@ var BooksTable = React.createClass({
             } else {
                 col0 = (
                     <button className="pure-button pure-button-disabled">
-                        <i className="fa fa-thumbs-up" style={{paddingRight: '3px'}}></i>
+                        <i className="fa fa-thumbs-up" style={Styles.inlineIconStyle}></i>
                         renew
                     </button>
                 );
