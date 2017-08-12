@@ -1,7 +1,7 @@
 const AWS = require('aws-sdk');
 const https = require('https');
 const querystring = require('querystring');
-
+const htmlparser = require('htmlparser');
 
 const lambda = new AWS.Lambda();
 const sns = new AWS.SNS();
@@ -90,31 +90,70 @@ function postRenewPromise(books, renewAction) {
     });
 }
 
-function timesRenewedInt(book) {
-    if (book.timesRenewed && (book.timesRenewed.length > 0)) {
-        return parseInt(book.timesRenewed);
-    } else return 0;
+function trimAndJoin(dom) {
+    const textItems = htmlparser.DomUtils.getElementsByTagType('text', dom);
+    return textItems.map((elt) => {
+        return elt.data.replace(/\n\s*/g, '');
+    }).join(' ');
 }
 
-function collectRenewalResults(oldItems, newItems) {
-    return oldItems.map((oldItem) => {
-        const newItem = newItems.find((item) => {
-            return (item.friendly == oldItem.friendly);
-        });
-        if (newItem) {
-            const resultItem = newItem;
-            if (timesRenewedInt(newItem) > timesRenewedInt(oldItem)) {
-                resultItem.status = 'SUCCESS';
-            } else {
-                resultItem.status = 'ERROR_NOT_RENEWED';
-            }
-            return resultItem;
-        } else {
-            console.warn(`Unexpected: Cannot find ${oldItem.friendly} in the results`);
-            const errorItem = oldItem;
-            errorItem.status = 'ERROR_MISSING'
-            return errorItem;
+function readRenewalResultsFromDom(dom) {
+    const titleElements = htmlparser.DomUtils.getElementsByTagName('title', dom);
+    if (titleElements.length == 0) {
+        console.error(`Unexpected HTML: No title`);
+        return null;
+    }
+    const title = trimAndJoin(titleElements[0]);
+    if (!title.includes('Renewed')) {
+        console.error(`Unexpected title for renewal page: ${title}`);
+        return null;
+    }
+    
+    const contentElements = htmlparser.DomUtils.getElements({class: 'content'}, dom);
+    if (contentElements.length == 0) {
+        console.error(`Unexpected HTML: No content element`);
+        return null;
+    }
+    
+    const dlElements = htmlparser.DomUtils.getElementsByTagName('dl', contentElements[0]);
+    return dlElements.map((dlElement, index) => {
+        const dtElements = htmlparser.DomUtils.getElementsByTagName('dt', dlElement);
+        if (dtElements.length == 0){
+            console.error(`Unexpected ${index}th renewal element: no dt`);
+            return null;
         }
+        const dtText = trimAndJoin(dtElements[0]);
+        
+        const ddElements = htmlparser.DomUtils.getElementsByTagName('dd', dlElement);
+        if (ddElements.length == 0) {
+            console.error(`Unexpected ${index}th renewal element: no dd`);
+        }
+        const ddText = trimAndJoin(ddElements[0]);
+        
+        const success = dtText.includes('Item renewed');
+        const renewalItem = {
+            success: success,
+            term: dtText,
+            description: ddText
+        };
+        console.log(`Renewal item ${index}: ${JSON.stringify(renewalItem)}`);
+        return renewalItem;
+    }).filter((item) => { return (item != null); });
+}
+
+function parseRenewResponsePromise(renewResponse) {
+    return new Promise((resolve, reject) => {
+        const handler = new htmlparser.DefaultHandler((err, dom) => {
+            if (err) reject(err);
+            else {
+                const renewalResults = readRenewalResultsFromDom(dom);
+                console.log(`Renewal results: ${JSON.stringify(renewalResults)}`);
+                
+                resolve(renewalResults);
+            }
+        }, {verbose: false});
+        const parser = new htmlparser.Parser(handler);
+        parser.parseComplete(renewResponse);
     });
 }
 
@@ -123,7 +162,7 @@ function snsPublishPromise(books) {
         const successfulRenewals = [];
         const unsuccessfulRenewals = [];
         books.forEach((book) => {
-            if (book.status == 'SUCCESS') {
+            if (book.success) {
                 successfulRenewals.push(book);
             } else {
                 unsuccessfulRenewals.push(book);
@@ -158,22 +197,24 @@ exports.handler = (event, context, callback) => {
         console.log(`Expiring soon: ${JSON.stringify(titlesExpiringSoon)}`);
         
         return postRenewPromise(booksToRenew, response.renewAction);
-        //booksToRenew.push(response.libraryItems[2]);
-        //console.log(`DELETEME: ${JSON.stringify(titlesExpiringSoon)}`);
-        //return Promise.resolve();
-    }).then(() => {
-        // Scraping the renewal response looks like it's going to be tedious.
-        // Instead, just re-request the list of books and due dates, and
-        // compare timesRenewed.
+    }).then((renewResponse) => {
         if (booksToRenew.length > 0) {
-            return invokeGetBooksPromise();
+            return parseRenewResponsePromise(renewResponse);
         } else {
-            return Promise.resolve({ libraryItems: [] });
+            return Promise.resolve([]);
         }
-    }).then((response) => {
-        const result = collectRenewalResults(booksToRenew, response.libraryItems);
-        console.log(JSON.stringify(result));
-        return snsPublishPromise(result);
+    }).then((result) => {
+        if (result) {
+            console.log(JSON.stringify(result));
+            return snsPublishPromise(result);
+        } else {
+            // Throw an error.  It appears that sometimes the renewal doesn't succeed;
+            // needs more troubleshooting.
+            return Promise.reject('Renewal response not recognized');
+        }
+    }).then((result) => {
+        console.log(`Done; invalidating GetBooks cache`);
+        return invokeGetBooksPromise();
     }).then((result) => {
         callback(null, result);
     }).catch((e) => {
