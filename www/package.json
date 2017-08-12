@@ -4,6 +4,7 @@
   "description": "",
   "main": "webpack.config.js",
   "dependencies": {
+    "amazon-cognito-identity-js": "^1.19.0",
     "webpack": "^2.7.0"
   },
   "devDependencies": {
@@ -13,9 +14,11 @@
     "babel-preset-react": "^6.5.0",
     "babel-preset-stage-0": "^6.5.0",
     "html-webpack-plugin": "^2.29.0",
+    "json-loader": "^0.5.7",
     "jsx-loader": "^0.13.2",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1"
+    "react-dom": "^15.6.1",
+    "webpack": "^2.7.0"
   },
   "scripts": {
     "start": "webpack --config webpack.config.js",

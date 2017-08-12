@@ -29,6 +29,10 @@ module.exports = {
         query: {
           presets: ['react']
         }
+      },
+      {
+        test: /\.json$/,
+        loader: 'json-loader'
       }
     ]
   },

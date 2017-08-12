@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
 const Styles = {
     titlebarStyle: {
