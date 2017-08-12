@@ -150,14 +150,44 @@ var BooksTable = React.createClass({
 });
 
 var SignInOverlay = React.createClass({
+    getInitialState: function() {
+        return {
+            isSignUp: false
+        };
+    },
+    onSignInSignUpToggleClicked: function() {
+        this.setState({
+            isSignUp: !this.state.isSignUp
+        });
+    },
     render: function() {
         if (this.props.show) {
+            const legendText = this.state.isSignUp ? 'Sign up' : 'Sign in';
+            const legendToggleText = this.state.isSignUp ? '(Sign in?)' : '(Sign up?)';
+            const buttonText = legendText
+            var bottomOfForm = (
+                <label htmlFor="remember" className="pure-checkbox">
+                    <input id="remember" type="checkbox"/>  Remember me
+                </label>
+            );
+            if (this.state.isSignUp) {
+                bottomOfForm = (
+                    <div>
+                        <label htmlFor="passwordRepeat">Password (again)</label>
+                        <input id="passwordRepeat" type="password" placeholder="Retype password"/>
+                    </div>
+                );
+            };
             return(
                 <div className="pure-u-1" style={Styles.overlayStyle}>
                     <div style={Styles.signInStyle}>
                         <form className="pure-form pure-form-stacked">
                             <fieldset>
-                                <legend><h3>Sign in (<a href="#">Sign up?</a>)</h3></legend>
+                                <legend>
+                                    <h3>
+                                        {legendText}   <a href="#" onClick={this.onSignInSignUpToggleClicked}>{legendToggleText}</a>
+                                    </h3>
+                                </legend>
                                 
                                 <label htmlFor="email">Email</label>
                                 <input id="email" type="email" placeholder="Email" autoFocus/>
@@ -166,11 +196,9 @@ var SignInOverlay = React.createClass({
                                 <label htmlFor="password">Password</label>
                                 <input id="password" type="password" placeholder="Password"/>
                                 
-                                <label htmlFor="remember" className="pure-checkbox">
-                                    <input id="remember" type="checkbox"/>  Remember me
-                                </label>
+                                {bottomOfForm}
                                 
-                                <button type="submit" className="pure-button pure-button-primary">Sign in</button>
+                                <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}}>{buttonText}</button>
                             </fieldset>
                         </form>
                     </div>
