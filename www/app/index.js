@@ -21,6 +21,15 @@ const Styles = {
     },
     inlineIconStyle: {
         paddingRight: '3px'
+    },
+    overlayStyle: {
+        backgroundColor: 'navy',
+        opacity: '0.5',
+        position: 'absolute',
+        left: '0px',
+        top: '0px',
+        height: '100%',
+        width: '100%'
     }
 };
 
@@ -129,7 +138,24 @@ var BooksTable = React.createClass({
     }
 });
 
+var SignInOverlay = React.createClass({
+    render: function() {
+        if (this.props.show) {
+            return(
+                <div className="pure-u-1" style={Styles.overlayStyle}/>  
+            );
+        } else {
+            return(<div/>);
+        }
+    }
+});
+
 var Main = React.createClass({
+    getInitialState: function() {
+        return {
+            needSignIn: true
+        };
+    },
     render: function() {
         const endpoint = FCPL_API_ENDPOINT;
         return (
@@ -142,6 +168,7 @@ var Main = React.createClass({
                 <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-2">
                     <BooksTable endpoint={endpoint}/>
+                    <SignInOverlay show={this.state.needSignIn}/>
                 </div>
                 <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-8" style={Styles.sidebarStyle}>
