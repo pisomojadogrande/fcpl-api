@@ -26,6 +26,7 @@ function invokeGetBooksPromise() {
             else if (data.FunctionError) reject(data.FunctionError);
             else {
                 const body = JSON.parse(data.Payload).body;
+                console.log(`GetBooks response ${JSON.stringify(body, null, 2)}`);
                 resolve(JSON.parse(body));
             }
         });
@@ -53,6 +54,7 @@ function postRenewPromise(books, renewAction) {
             postDataParams[book.renewName] = 'on'
         });
         const postData = querystring.stringify(postDataParams);
+        console.log(`Posting: ${JSON.stringify(postDataParams)}`);
         
         const httpsOptions = {
             hostname: FCPL_HOSTNAME,
