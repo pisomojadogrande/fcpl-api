@@ -160,6 +160,10 @@ var SignInOverlay = React.createClass({
             isSignUp: !this.state.isSignUp
         });
     },
+    onSignInSignUpButtonClicked: function(e) {
+        // TODO actually sign in.
+        this.props.onSignInStateChanged();
+    },
     render: function() {
         if (this.props.show) {
             const legendText = this.state.isSignUp ? 'Sign up' : 'Sign in';
@@ -198,7 +202,7 @@ var SignInOverlay = React.createClass({
                                 
                                 {bottomOfForm}
                                 
-                                <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}}>{buttonText}</button>
+                                <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInSignUpButtonClicked}>{buttonText}</button>
                             </fieldset>
                         </form>
                     </div>
@@ -216,6 +220,11 @@ var Main = React.createClass({
             needSignIn: true
         };
     },
+    onSignInStateChanged: function() {
+        this.setState({
+            needSignIn: false
+        });
+    },
     render: function() {
         const endpoint = FCPL_API_ENDPOINT;
         return (
@@ -228,7 +237,7 @@ var Main = React.createClass({
                 <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-2">
                     <BooksTable endpoint={endpoint}/>
-                    <SignInOverlay show={this.state.needSignIn}/>
+                    <SignInOverlay show={this.state.needSignIn} onSignInStateChanged={this.onSignInStateChanged}/>
                 </div>
                 <div className="pure-u-1-8"></div>
                 <div className="pure-u-1-8" style={Styles.sidebarStyle}>
