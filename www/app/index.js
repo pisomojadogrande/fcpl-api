@@ -24,12 +24,23 @@ const Styles = {
     },
     overlayStyle: {
         backgroundColor: 'navy',
-        opacity: '0.5',
+        //opacity: '0.9',
         position: 'absolute',
         left: '0px',
         top: '0px',
         height: '100%',
         width: '100%'
+    },
+    signInStyle: {
+        backgroundColor: 'white',
+        opacity: '1.0',
+        position: 'absolute',
+        width: '300px',
+        height: 'auto',
+        left: '50%',
+        marginLeft: '-150px',
+        marginTop: '50px',
+        padding: '10px'
     }
 };
 
@@ -142,7 +153,28 @@ var SignInOverlay = React.createClass({
     render: function() {
         if (this.props.show) {
             return(
-                <div className="pure-u-1" style={Styles.overlayStyle}/>  
+                <div className="pure-u-1" style={Styles.overlayStyle}>
+                    <div style={Styles.signInStyle}>
+                        <form className="pure-form pure-form-stacked">
+                            <fieldset>
+                                <legend><h3>Sign in (<a href="#">Sign up?</a>)</h3></legend>
+                                
+                                <label htmlFor="email">Email</label>
+                                <input id="email" type="email" placeholder="Email" autoFocus/>
+                                <span className="pure-form-message">required</span>
+                                
+                                <label htmlFor="password">Password</label>
+                                <input id="password" type="password" placeholder="Password"/>
+                                
+                                <label htmlFor="remember" className="pure-checkbox">
+                                    <input id="remember" type="checkbox"/>  Remember me
+                                </label>
+                                
+                                <button type="submit" className="pure-button pure-button-primary">Sign in</button>
+                            </fieldset>
+                        </form>
+                    </div>
+                </div>
             );
         } else {
             return(<div/>);
