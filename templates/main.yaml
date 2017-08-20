@@ -1,6 +1,8 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: FCPL account access
 Parameters:
+    FirstUserEmailAddress:
+        Type: String
     FCPLAccountId:
         Type: String
         AllowedPattern: "^[0-9]+$"
@@ -19,6 +21,33 @@ Parameters:
         Type: String
         Default: 'your@email.com'
 Resources:
+    UserPool:
+        Type: "AWS::Cognito::UserPool"
+        Properties:
+            AdminCreateUserConfig:
+                InviteMessageTemplate:
+                    EmailMessage: 'PisoMojado welcomes you to the easier way to use the Fairfax County Public Library.  Here is your verification code: {####}'
+                    EmailSubject: "Welcome!"
+            AliasAttributes:
+                - email
+            AutoVerifiedAttributes:
+                - email
+            EmailVerificationMessage: 'Here is your verification code: {####}'
+            EmailVerificationSubject: "Email verification from PisoMojado"
+            UserPoolName: pisomojado-fcpl-user-pool
+    UserPoolClient:
+        Type: "AWS::Cognito::UserPoolClient"
+        Properties:
+            UserPoolId: !Ref UserPool
+    FirstUser:
+        Type: "AWS::Cognito::UserPoolUser"
+        Properties:
+            DesiredDeliveryMediums:
+                - EMAIL
+            UserAttributes:
+                - email: !Ref FirstUserEmailAddress
+            UserName: first_user
+            UserPoolId: !Ref UserPool
     FcplApi:
         Type: "AWS::ApiGateway::RestApi"
         Properties:
@@ -204,6 +233,14 @@ Resources:
                 - Endpoint: !Ref NotificationEmail
                   Protocol: email
 Outputs:
+    UserPoolProviderName:
+        Value: !GetAtt UserPool.ProviderName
+    UserPoolProviderURL:
+        Value: !GetAtt UserPool.ProviderURL
+    UserPoolArn:
+        Value: !GetAtt UserPool.Arn
+    UserPoolClientId:
+        Value: !Ref UserPoolClient
     FcplApiEndpoint:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
     GetBooksFunctionName:
