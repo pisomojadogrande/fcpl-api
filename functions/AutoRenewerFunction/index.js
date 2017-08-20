@@ -8,6 +8,7 @@ const sns = new AWS.SNS();
 
 const TOLERANCE_DAYS = 2;
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
+const RENEW_RETRIES = 2;
 
 function invokeGetBooksPromise() {
     return new Promise((resolve, reject) => {
@@ -147,13 +148,42 @@ function parseRenewResponsePromise(renewResponse) {
             if (err) reject(err);
             else {
                 const renewalResults = readRenewalResultsFromDom(dom);
-                console.log(`Renewal results: ${JSON.stringify(renewalResults)}`);
+                if (!renewalResults) {
+                    reject(`Renewal failed`);
+                }
                 
+                console.log(`Renewal results: ${JSON.stringify(renewalResults)}`);
                 resolve(renewalResults);
             }
         }, {verbose: false});
         const parser = new htmlparser.Parser(handler);
         parser.parseComplete(renewResponse);
+    });
+}
+
+function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
+    if (books.length == 0) return Promise.resolve([]);
+    
+    const retryOnFail = (retriesRemaining > 0);
+    return new Promise((resolve, reject) => {
+        postRenewPromise(books, renewAction).then((renewBooksResponse) => {
+            return parseRenewResponsePromise(renewBooksResponse);
+        }).then((renewalResult) => {
+            resolve(renewalResult);
+        }).catch((err) => {
+            retriesRemaining--;
+            console.error(`Failed to renew, retry=${retryOnFail}: ${err}`);
+            if (retryOnFail) {
+                // Better way to do a recursive Promise??
+                renewBooksPromiseWithRetries(books, renewAction, retriesRemaining).then((result) => {
+                    resolve(result);
+                }).catch((err) => {
+                    reject(err);
+                });
+            } else {
+                reject(err);
+            }
+        });
     });
 }
 
@@ -196,22 +226,10 @@ exports.handler = (event, context, callback) => {
         const titlesExpiringSoon = booksToRenew.map((book) => book.friendly);
         console.log(`Expiring soon: ${JSON.stringify(titlesExpiringSoon)}`);
         
-        return postRenewPromise(booksToRenew, response.renewAction);
-    }).then((renewResponse) => {
-        if (booksToRenew.length > 0) {
-            return parseRenewResponsePromise(renewResponse);
-        } else {
-            return Promise.resolve([]);
-        }
+        return renewBooksPromiseWithRetries(booksToRenew, response.renewAction, RENEW_RETRIES);
     }).then((result) => {
-        if (result) {
-            console.log(JSON.stringify(result));
-            return snsPublishPromise(result);
-        } else {
-            // Throw an error.  It appears that sometimes the renewal doesn't succeed;
-            // needs more troubleshooting.
-            return Promise.reject('Renewal response not recognized');
-        }
+        console.log(JSON.stringify(result));
+        return snsPublishPromise(result);
     }).then((result) => {
         console.log(`Done; invalidating GetBooks cache`);
         return invokeGetBooksPromise();
