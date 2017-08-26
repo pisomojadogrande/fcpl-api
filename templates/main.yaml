@@ -26,14 +26,14 @@ Resources:
         Properties:
             AdminCreateUserConfig:
                 InviteMessageTemplate:
-                    EmailMessage: 'PisoMojado welcomes you to the easier way to use the Fairfax County Public Library.  Here is your verification code: {####}'
-                    EmailSubject: "Welcome!"
+                    EmailMessage: 'PisoMojado welcomes you to the easier way to use the Fairfax County Public Library.  Your username is {username}, and your verification code is {####}.  Have fun!'
+                    EmailSubject: "Welcome to the easier way to use FCPL!  from PisoMojado"
             AliasAttributes:
                 - email
             AutoVerifiedAttributes:
                 - email
-            EmailVerificationMessage: 'Here is your verification code: {####}'
-            EmailVerificationSubject: "Email verification from PisoMojado"
+            EmailVerificationMessage: 'Your username is {username}, and your verification code is {####}.  Have fun!'
+            EmailVerificationSubject: "Email verification for the easier way to use FCPL (from PisoMojado)"
             UserPoolName: pisomojado-fcpl-user-pool
     UserPoolClient:
         Type: "AWS::Cognito::UserPoolClient"
@@ -45,8 +45,9 @@ Resources:
             DesiredDeliveryMediums:
                 - EMAIL
             UserAttributes:
-                - email: !Ref FirstUserEmailAddress
-            UserName: first_user
+                - Name: email
+                  Value: !Ref FirstUserEmailAddress
+            Username: first_user
             UserPoolId: !Ref UserPool
     FcplApi:
         Type: "AWS::ApiGateway::RestApi"
