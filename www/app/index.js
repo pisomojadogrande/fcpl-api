@@ -153,7 +153,9 @@ var BooksTable = React.createClass({
 var SignInOverlay = React.createClass({
     getInitialState: function() {
         return {
-            isSignUp: false
+            isSignUp: false,
+            email: '',
+            password: ''
         };
     },
     onSignInSignUpToggleClicked: function() {
@@ -161,9 +163,20 @@ var SignInOverlay = React.createClass({
             isSignUp: !this.state.isSignUp
         });
     },
+    onEmailChange: function(e) {
+        this.setState({
+            email: e.target.value
+        });
+    },
+    onPasswordChange: function(e) {
+        this.setState({
+            password: e.target.value
+        });
+    },
     onSignInSignUpButtonClicked: function(e) {
+        alert("email=" + this.state.email + " password=" + this.state.password);
         // TODO actually sign in.
-        this.props.onSignInStateChanged();
+        //this.props.onSignInStateChanged();
     },
     render: function() {
         if (this.props.show) {
@@ -195,11 +208,11 @@ var SignInOverlay = React.createClass({
                                 </legend>
                                 
                                 <label htmlFor="email">Email</label>
-                                <input id="email" type="email" placeholder="Email" autoFocus/>
+                                <input id="email" type="email" onChange={this.onEmailChange} placeholder="Email" autoFocus/>
                                 <span className="pure-form-message">required</span>
                                 
                                 <label htmlFor="password">Password</label>
-                                <input id="password" type="password" placeholder="Password"/>
+                                <input id="password" type="password" onChange={this.onPasswordChange} placeholder="Password"/>
                                 
                                 {bottomOfForm}
                                 
