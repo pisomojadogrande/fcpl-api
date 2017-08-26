@@ -151,6 +151,10 @@ var BooksTable = React.createClass({
 });
 
 var SignInOverlay = React.createClass({
+    
+    userPoolId: USER_POOL_ID,
+    userPoolClientId: USER_POOL_CLIENT_ID,
+    
     getInitialState: function() {
         return {
             isSignUp: false,
@@ -174,9 +178,9 @@ var SignInOverlay = React.createClass({
         });
     },
     onSignInSignUpButtonClicked: function(e) {
-        alert("email=" + this.state.email + " password=" + this.state.password);
+        alert("userPoolClientId=" + this.userPoolClientId);
         // TODO actually sign in.
-        //this.props.onSignInStateChanged();
+        this.props.onSignInStateChanged();
     },
     render: function() {
         if (this.props.show) {

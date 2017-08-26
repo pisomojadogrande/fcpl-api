@@ -238,6 +238,8 @@ Outputs:
         Value: !GetAtt UserPool.ProviderName
     UserPoolProviderURL:
         Value: !GetAtt UserPool.ProviderURL
+    UserPoolId:
+        Value: !Ref UserPool
     UserPoolArn:
         Value: !GetAtt UserPool.Arn
     UserPoolClientId:

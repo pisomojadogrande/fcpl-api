@@ -4,7 +4,7 @@ function WriteSiteProperties(
 )
 {
    if (-Not $wwwPath) {
-        $wwwPath = "www"
+        $wwwPath = Join-Path $(Get-Location) 'www'
    }
    $propsFile = Join-Path $wwwPath "properties.json"
    echo "Will write $propsFile"
@@ -14,15 +14,27 @@ function WriteSiteProperties(
       echo "Could not describe stack $stack"
       Return
    }
-   $endpointOutput = $stacksDescription.Stacks[0].Outputs | Where {$_.OutputKey -eq 'FcplApiEndpoint'}
-   if (-Not ($endpointOutput)) {
-      echo "Could not find an FcplApiEndpoint output in stack $stack"
-      Return
-   }
-   $endpoint = '\"' + $endpointOutput.OutputValue + '\"'
-   echo "Endpoint: $endpoint"
    
-   # FIXME: This outputs a file with a BOM, which webpack can't read
-   $props = @{FCPL_API_ENDPOINT = $endpoint}
-   ConvertTo-Json $props > $propsFile   
+   $stackOutputMap = (
+        @{OutputKey = 'FcplApiEndpoint'; PropsKey = 'FCPL_API_ENDPOINT'},
+        @{OutputKey = 'UserPoolId'; PropsKey = 'USER_POOL_ID'},
+        @{OutputKey = 'UserPoolClientId'; PropsKey = 'USER_POOL_CLIENT_ID'}
+   )
+   
+   $propsObj = @{}
+   
+   $stackOutputMap | ForEach-Object {
+        $desiredKey = $_.OutputKey
+        $propsKey = $_.PropsKey
+        $outputObj = $stacksDescription.Stacks[0].Outputs | Where {$_.OutputKey -eq $desiredKey}
+        if (-Not ($outputObj)) {
+            echo "Could not find $desiredKey output in stack $stack"
+            Return
+        }
+        $propsObj.$propsKey = "'" + $outputObj.OutputValue + "'"
+   }
+   
+   $propsJson = ConvertTo-Json $propsObj
+   echo $propsJson
+   [System.IO.File]::WriteAllLines($propsFile, $propsJson)
 }
