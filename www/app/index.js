@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
+const AWS = require('aws-sdk');
 
 const Styles = {
     titlebarStyle: {
@@ -158,7 +159,7 @@ var SignInOverlay = React.createClass({
     getInitialState: function() {
         return {
             isSignUp: false,
-            email: '',
+            username: '',
             password: ''
         };
     },
@@ -167,9 +168,9 @@ var SignInOverlay = React.createClass({
             isSignUp: !this.state.isSignUp
         });
     },
-    onEmailChange: function(e) {
+    onUsernameChange: function(e) {
         this.setState({
-            email: e.target.value
+            username: e.target.value
         });
     },
     onPasswordChange: function(e) {
@@ -178,9 +179,42 @@ var SignInOverlay = React.createClass({
         });
     },
     onSignInSignUpButtonClicked: function(e) {
-        alert("userPoolClientId=" + this.userPoolClientId);
+        if (this.state.isSignUp) {
+            alert("Not yet implemented");
+        } else {
+            this.signIn();
+        }
+        
         // TODO actually sign in.
-        this.props.onSignInStateChanged();
+        //this.props.onSignInStateChanged();
+    },
+    signIn: function() {
+        const authenticationData = {
+            Username: this.state.username,
+            Password: this.state.password
+        };
+        const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+        const poolData = {
+            UserPoolId: USER_POOL_ID,
+            ClientId: USER_POOL_CLIENT_ID
+        };
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        const userData = {
+            Username: this.state.username,
+            Pool: userPool
+        };
+        const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+        cognitoUser.authenticateUser(authenticationDetails, {
+            onSuccess: function(result) {
+                alert("Success " + result.getAccessToken().getJwtToken());
+            },
+            onFailure: function(err) {
+                alert("Failure " + err);
+            },
+            newPasswordRequired: function(userAttributes, requiredAttributes) {
+                alert("new password required " + JSON.stringify(userAttributes));
+            }
+        });
     },
     render: function() {
         if (this.props.show) {
@@ -211,8 +245,8 @@ var SignInOverlay = React.createClass({
                                     </h3>
                                 </legend>
                                 
-                                <label htmlFor="email">Email</label>
-                                <input id="email" type="email" onChange={this.onEmailChange} placeholder="Email" autoFocus/>
+                                <label htmlFor="username">Username or email</label>
+                                <input id="username" onChange={this.onUsernameChange} placeholder="username/email" autoFocus/>
                                 <span className="pure-form-message">required</span>
                                 
                                 <label htmlFor="password">Password</label>
