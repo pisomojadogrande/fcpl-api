@@ -1,7 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import { Layout } from './layout'
+import { Styles } from './styles'
 
-var Main = React.createClass({
+var SignIn = React.createClass({
     getInitialState: function() {
         return {
         };
@@ -16,4 +18,9 @@ var Main = React.createClass({
     }
 });
 
-ReactDOM.render(<Main />, document.getElementById('app'));
+ReactDOM.render(
+    <Layout>
+        <SignIn />
+    </Layout>,
+    document.getElementById('app')
+);

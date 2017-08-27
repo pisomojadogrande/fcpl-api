@@ -8,7 +8,9 @@ console.log('DefinePlugin: ' + JSON.stringify(DefinePlugin));
 module.exports = {
   entry: {
     index: './app/index.js',
-    signin: './app/signin.js'
+    layout: './app/layout.js',
+    signin: './app/signin.js',
+    styles: './app/styles.js'
   },
   output: {
     path: __dirname + '/dist',
@@ -39,7 +41,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['signin'],
+      chunks: ['styles', 'layout', 'signin'],
       template: __dirname + '/app/signin.html',
       filename: 'signin.html'
     }),
