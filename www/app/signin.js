@@ -1,27 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { Layout } from './layout'
+import { Layout, LayoutStyles } from './layout'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
-
-const SignInStyles = {
-    containerStyle: {
-        backgroundColor: 'navy',
-        height: '600px'
-    },
-    signInStyle: {
-        backgroundColor: 'white',
-        opacity: '1.0',
-        position: 'absolute',
-        width: '300px',
-        height: 'auto',
-        left: '50%',
-        marginLeft: '-150px',
-        marginTop: '50px',
-        padding: '10px'
-    }
-};
 
 var SignIn = React.createClass({
     
@@ -30,15 +12,9 @@ var SignIn = React.createClass({
     
     getInitialState: function() {
         return {
-            isSignUp: false,
             username: '',
             password: ''
         };
-    },
-    onSignInSignUpToggleClicked: function() {
-        this.setState({
-            isSignUp: !this.state.isSignUp
-        });
     },
     onUsernameChange: function(e) {
         this.setState({
@@ -50,17 +26,8 @@ var SignIn = React.createClass({
             password: e.target.value
         });
     },
-    onSignInSignUpButtonClicked: function(e) {
-        if (this.state.isSignUp) {
-            alert("Not yet implemented");
-        } else {
-            this.signIn();
-        }
-        
-        // TODO actually sign in.
-        //this.props.onSignInStateChanged();
-    },
-    signIn: function() {
+    onSignInButtonClicked: function(e) {
+        e.preventDefault();
         const authenticationData = {
             Username: this.state.username,
             Password: this.state.password
@@ -89,31 +56,20 @@ var SignIn = React.createClass({
         });
     },
     render: function() {
-        const legendText = this.state.isSignUp ? 'Sign up' : 'Sign in';
-        const legendToggleText = this.state.isSignUp ? '(Sign in?)' : '(Sign up?)';
+        const legendText = 'Sign in';
         const buttonText = legendText
         var bottomOfForm = (
             <label htmlFor="remember" className="pure-checkbox">
                 <input id="remember" type="checkbox"/>  Remember me
             </label>
         );
-        if (this.state.isSignUp) {
-            bottomOfForm = (
-                <div>
-                    <label htmlFor="passwordRepeat">Password (again)</label>
-                    <input id="passwordRepeat" type="password" placeholder="Retype password"/>
-                </div>
-            );
-        };
         return(
-            <div className="pure-u-1" style={SignInStyles.containerStyle}>
-                <div style={SignInStyles.signInStyle}>
+            <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
+                <div style={LayoutStyles.centerFormStyle}>
                     <form className="pure-form pure-form-stacked">
                         <fieldset>
                             <legend>
-                                <h3>
-                                    {legendText}   <a href="#" onClick={this.onSignInSignUpToggleClicked}>{legendToggleText}</a>
-                                </h3>
+                                <h3>{legendText}</h3>
                             </legend>
                             
                             <label htmlFor="username">Username or email</label>
@@ -125,7 +81,7 @@ var SignIn = React.createClass({
                             
                             {bottomOfForm}
                             
-                            <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInSignUpButtonClicked}>{buttonText}</button>
+                            <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInButtonClicked}>{buttonText}</button>
                         </fieldset>
                     </form>
                 </div>

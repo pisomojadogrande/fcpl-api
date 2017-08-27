@@ -12,6 +12,20 @@ export const LayoutStyles = {
         backgroundColor: 'purple',
         color: 'white'
     },
+    centerModalStyle: {
+        backgroundColor: 'navy',
+        height: '600px'
+    },
+    centerFormStyle: {
+        backgroundColor: 'white',
+        position: 'absolute',
+        width: '300px',
+        height: 'auto',
+        left: '50%',
+        marginLeft: '-150px',
+        marginTop: '50px',
+        padding: '10px'
+    }
 }; 
 
 export const Layout = React.createClass({
