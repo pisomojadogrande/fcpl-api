@@ -9,8 +9,7 @@ module.exports = {
   entry: {
     index: './app/index.js',
     layout: './app/layout.js',
-    signin: './app/signin.js',
-    styles: './app/styles.js'
+    signin: './app/signin.js'
   },
   output: {
     path: __dirname + '/dist',
@@ -35,13 +34,13 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['index'],
+      chunks: ['layout', 'index'],
       template: __dirname + '/app/index.html',
       filename: 'index.html'
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['styles', 'layout', 'signin'],
+      chunks: ['layout', 'signin'],
       template: __dirname + '/app/signin.html',
       filename: 'signin.html'
     }),
