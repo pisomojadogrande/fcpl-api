@@ -51,18 +51,14 @@ var SignIn = React.createClass({
                 alert("Failure " + err);
             },
             newPasswordRequired: function(userAttributes, requiredAttributes) {
-                alert("new password required " + JSON.stringify(userAttributes));
+                //alert('userAttributes=' + JSON.stringify(userAttributes) + '; requiredAttributes=' + JSON.stringify(requiredAttributes));
+                window.location = "./changepassword.html?username=" + userData.Username + "&email=" + userAttributes.email;
             }
         });
     },
     render: function() {
         const legendText = 'Sign in';
         const buttonText = legendText
-        var bottomOfForm = (
-            <label htmlFor="remember" className="pure-checkbox">
-                <input id="remember" type="checkbox"/>  Remember me
-            </label>
-        );
         return(
             <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
                 <div style={LayoutStyles.centerFormStyle}>
@@ -79,7 +75,9 @@ var SignIn = React.createClass({
                             <label htmlFor="password">Password</label>
                             <input id="password" type="password" onChange={this.onPasswordChange} placeholder="Password"/>
                             
-                            {bottomOfForm}
+                            <label htmlFor="remember" className="pure-checkbox">
+                                <input id="remember" type="checkbox" disabled="true"/>  Remember me
+                            </label>
                             
                             <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInButtonClicked}>{buttonText}</button>
                         </fieldset>
