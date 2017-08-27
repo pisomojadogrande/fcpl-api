@@ -1,24 +1,18 @@
-var config = require(__dirname + '/properties.json');
+var substitutions = require(__dirname + '/properties.json');
 var webpack = require('webpack');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
-var HTMLWebpackPluginConfig = new HtmlWebpackPlugin({
-  template: __dirname + '/app/index.html',
-  filename: 'index.html',
-  inject: 'body'
-});
-console.log('HTMLWebpackPlugin: ' + JSON.stringify(HTMLWebpackPluginConfig));
-
-var DefinePlugin = new webpack.DefinePlugin(config);
+var DefinePlugin = new webpack.DefinePlugin(substitutions);
 console.log('DefinePlugin: ' + JSON.stringify(DefinePlugin));
 
 module.exports = {
-  entry: [
-    './app/index.js'
-  ],
+  entry: {
+    index: './app/index.js',
+    signin: './app/signin.js'
+  },
   output: {
     path: __dirname + '/dist',
-    filename: "index_bundle.js"
+    filename: "[name]_bundle.js"
   },
   module: {
     loaders: [
@@ -36,5 +30,19 @@ module.exports = {
       }
     ]
   },
-  plugins: [HTMLWebpackPluginConfig, DefinePlugin]
+  plugins: [
+    new HtmlWebpackPlugin({
+      inject: 'body',
+      chunks: ['index'],
+      template: __dirname + '/app/index.html',
+      filename: 'index.html'
+    }),
+    new HtmlWebpackPlugin({
+      inject: 'body',
+      chunks: ['signin'],
+      template: __dirname + '/app/signin.html',
+      filename: 'signin.html'
+    }),
+    DefinePlugin
+  ]
 };
