@@ -34,6 +34,13 @@ Resources:
                 - email
             EmailVerificationMessage: 'Your username is {username}, and your verification code is {####}.  Have fun!'
             EmailVerificationSubject: "Email verification for the easier way to use FCPL (from PisoMojado)"
+            Policies:
+                PasswordPolicy:
+                    MinimumLength: 6
+                    RequireLowercase: false
+                    RequireNumbers: false
+                    RequireSymbols: false
+                    RequireUppercase: false
             UserPoolName: pisomojado-fcpl-user-pool
     UserPoolClient:
         Type: "AWS::Cognito::UserPoolClient"
