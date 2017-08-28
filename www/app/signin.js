@@ -5,6 +5,12 @@ import { Layout, LayoutStyles } from './layout'
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
 
+const Styles = {
+    warningStyle: {
+        color: 'red'
+    }
+};
+
 var SignIn = React.createClass({
     
     userPoolId: USER_POOL_ID,
@@ -13,7 +19,12 @@ var SignIn = React.createClass({
     getInitialState: function() {
         return {
             username: '',
-            password: ''
+            password: '',
+            needsNewPassword: false,
+            newPassword: '',
+            newPasswordAgain: '',
+            passwordWarning: '',
+            isSigningIn: false
         };
     },
     onUsernameChange: function(e) {
@@ -26,8 +37,29 @@ var SignIn = React.createClass({
             password: e.target.value
         });
     },
-    onSignInButtonClicked: function(e) {
-        e.preventDefault();
+    validateNewPassword: function(password, passwordAgain) {
+        if ((password.length > 0) && (password != passwordAgain)) {
+            return '! Passwords do not match';
+        } else if (password.length < 6) {
+            return '! Password must be at least 6 characters';
+        }
+        return '';
+    },
+    onNewPasswordChange: function(e) {
+        const passwordWarning = this.validateNewPassword(e.target.value, this.state.newPasswordAgain);
+        this.setState({
+            newPassword: e.target.value,
+            passwordWarning: passwordWarning
+        });
+    },
+    onNewPasswordAgainChange: function(e) {
+        const passwordWarning = this.validateNewPassword(this.state.newPassword, e.target.value);
+        this.setState({
+            newPasswordAgain: e.target.value,
+            passwordWarning: passwordWarning
+        });
+    },
+    signIn: function() {
         const authenticationData = {
             Username: this.state.username,
             Password: this.state.password
@@ -42,34 +74,78 @@ var SignIn = React.createClass({
             Username: this.state.username,
             Pool: userPool
         };
-        const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
-        cognitoUser.authenticateUser(authenticationDetails, {
+        this.cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+        this.setState({
+            isSigningIn: true
+        });
+        const that = this;
+        this.cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: function(result) {
                 alert("Success " + result.getAccessToken().getJwtToken());
             },
             onFailure: function(err) {
+                that.setState({
+                    isSigningIn: false
+                });
                 alert("Failure " + err);
             },
             newPasswordRequired: function(userAttributes, requiredAttributes) {
-                //alert('userAttributes=' + JSON.stringify(userAttributes) + '; requiredAttributes=' + JSON.stringify(requiredAttributes));
-                window.location = "./changepassword.html?username=" + userData.Username + "&email=" + userAttributes.email;
+                that.sessionContext = this;
+                that.userAttributes = userAttributes;
+                that.setState({
+                    needsNewPassword: true,
+                    isSigningIn: false
+                });
             }
         });
     },
+    completePasswordChallenge: function() {
+        this.setState({
+            isSigningIn: true
+        });
+        delete this.userAttributes.email_verified;
+        this.cognitoUser.completeNewPasswordChallenge(
+            this.state.newPassword,
+            this.userAttributes,
+            this.sessionContext
+        );
+    },
+    onSignInButtonClicked: function(e) {
+        e.preventDefault();
+        if (this.state.needsNewPassword) {
+            this.completePasswordChallenge();
+        } else {
+            this.signIn();
+        }
+    },
     render: function() {
-        const legendText = 'Sign in';
-        const buttonText = legendText
+        const submitButtonDisabled = this.state.isSigningIn || (this.state.passwordWarning.length > 0);
+        var newPasswordFieldSet = '';
+        if (this.state.needsNewPassword) {
+            newPasswordFieldSet = (
+                <fieldset>
+                    <legend>Looks like it's your first time... welcome!  Set a new password here:</legend>
+                    <label htmlFor="newPassword">Password</label>
+                    <input id="newPassword" type="password" onChange={this.onNewPasswordChange} placeholder="Password"/>
+
+                    <label htmlFor="newPasswordAgain">Password (again)</label>
+                    <input id="newPasswordAgain" type="password" onChange={this.onNewPasswordAgainChange} placeholder="Password"/>
+                    
+                    <label style={Styles.warningStyle}>{this.state.passwordWarning}</label>
+                </fieldset>
+            );
+        }
         return(
             <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
                 <div style={LayoutStyles.centerFormStyle}>
                     <form className="pure-form pure-form-stacked">
                         <fieldset>
                             <legend>
-                                <h3>{legendText}</h3>
+                                <h3>Sign in</h3>
                             </legend>
                             
-                            <label htmlFor="username">Username or email</label>
-                            <input id="username" onChange={this.onUsernameChange} placeholder="username/email" autoFocus/>
+                            <label htmlFor="username">Username</label>
+                            <input id="username" onChange={this.onUsernameChange} placeholder="username" autoFocus/>
                             <span className="pure-form-message">required</span>
                             
                             <label htmlFor="password">Password</label>
@@ -79,8 +155,9 @@ var SignIn = React.createClass({
                                 <input id="remember" type="checkbox" disabled="true"/>  Remember me
                             </label>
                             
-                            <button type="submit" className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInButtonClicked}>{buttonText}</button>
                         </fieldset>
+                        {newPasswordFieldSet}
+                        <button type="submit" disabled={submitButtonDisabled} className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInButtonClicked}>Sign in</button>
                     </form>
                 </div>
             </div>

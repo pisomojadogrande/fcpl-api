@@ -7,7 +7,6 @@ console.log('DefinePlugin: ' + JSON.stringify(DefinePlugin));
 
 module.exports = {
   entry: {
-    changepassword: './app/changepassword.js',
     index: './app/index.js',
     layout: './app/layout.js',
     signin: './app/signin.js'
@@ -44,12 +43,6 @@ module.exports = {
       chunks: ['layout', 'signin'],
       template: __dirname + '/app/signin.html',
       filename: 'signin.html'
-    }),
-    new HtmlWebpackPlugin({
-      inject: 'body',
-      chunks: ['layout', 'changepassword'],
-      template: __dirname + '/app/changepassword.html',
-      filename: 'changepassword.html'
     }),
     DefinePlugin
   ]
