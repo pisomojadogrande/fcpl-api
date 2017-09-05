@@ -133,6 +133,9 @@ function obtainSessionPromise(ctx) {
             if (res.statusCode != 200) {
                 reject(res);
             }
+        }).on('error', (e) => {
+            console.error(`https GET error ${e}`);
+            reject(e);
         });
     });
 }
