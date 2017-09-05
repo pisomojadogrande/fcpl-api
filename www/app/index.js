@@ -12,6 +12,13 @@ const IndexStyles = {
     },
     inlineIconStyle: {
         paddingRight: '3px'
+    },
+    errorBarStyle: {
+        backgroundColor: '#c90014',
+        color: 'white',
+        width: '100%',
+        paddingLeft: '5px',
+        marginTop: '10px'
     }
 };
 
@@ -20,13 +27,14 @@ var BooksTable = React.createClass({
         isLoading: true,
         books: [
             {
-                title: 'loading',
-                timesRenewed: 0,
-                dueDate: 'loading',
+                title: '---',
+                timesRenewed: '---',
+                dueDate: '---',
                 key: 'LOADING_KEY'
             }
         ],
-        lastModified: 'unknown'
+        lastModified: 'unknown',
+        lastError: undefined
     },
     getInitialState: function() {
         return this.loadingState;
@@ -51,7 +59,14 @@ var BooksTable = React.createClass({
             that.setState({
                 isLoading: false,
                 books: that.getBooksResponseToBooks(response),
-                lastModified: (new Date(response.lastModified)).toString()
+                lastModified: (new Date(response.lastModified)).toString(),
+                lastError: undefined
+            });
+        });
+        req.addEventListener('error', function(e) {
+            that.setState({
+                isLoading: false,
+                lastError: 'Error fetching books.  Please try again later.'
             });
         });
         var url = this.props.endpoint + '/books';
@@ -70,6 +85,7 @@ var BooksTable = React.createClass({
     },
     render: function() {
         var spinner = <i className="fa fa-refresh fa-spin fa-fw"></i>;
+        var errorDisplay = this.state.lastError ? 'block' : 'none';
         var refreshButton = (
             <button className="pure-button" onClick={this.onRefreshClicked}>
                 <i className="fa fa-refresh" style={IndexStyles.inlineIconStyle}></i>
@@ -101,6 +117,9 @@ var BooksTable = React.createClass({
         });
         return(
             <div>
+                <div style={IndexStyles.errorBarStyle} display={errorDisplay}>
+                    <h3>{this.state.lastError}</h3>
+                </div>
                 <table className="pure-table" style={IndexStyles.tableStyle}>
                     <thead>
                         <tr>
