@@ -77,6 +77,12 @@ var BooksTable = React.createClass({
         req.send();
     },
     componentDidMount: function() {
+        const url = new URL(window.location.href);
+        const jwtToken = url.searchParams.get('token');
+        if (!jwtToken) {
+            window.location = './signin.html';
+        }
+
         this.startLoad();
     },
     onRefreshClicked: function() {
