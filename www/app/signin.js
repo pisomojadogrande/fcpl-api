@@ -81,7 +81,8 @@ var SignIn = React.createClass({
         const that = this;
         this.cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: function(result) {
-                alert("Success " + result.getAccessToken().getJwtToken());
+                const jwtToken = result.getAccessToken().getJwtToken();
+                window.location = './index.html?token=' + jwtToken;
             },
             onFailure: function(err) {
                 that.setState({
