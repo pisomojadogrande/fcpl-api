@@ -44,6 +44,18 @@ Resources:
         Type: "AWS::Cognito::UserPoolClient"
         Properties:
             UserPoolId: !Ref UserPool
+    UserTable:
+        Type: "AWS::DynamoDB::Table"
+        Properties:
+            AttributeDefinitions:
+                - AttributeName: IdentityId
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: IdentityId
+                  KeyType: HASH
+            ProvisionedThroughput:
+                ReadCapacityUnits: 1
+                WriteCapacityUnits: 1
     FcplApi:
         Type: "AWS::ApiGateway::RestApi"
         Properties:
@@ -74,6 +86,51 @@ Resources:
             AuthorizationType: NONE
             RestApiId: !Ref FcplApi
             ResourceId: !Ref FcplApiBooksResource
+            HttpMethod: OPTIONS
+            Integration:
+                IntegrationResponses:
+                    - StatusCode: 200
+                      ResponseParameters:
+                        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                        method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+                      ResponseTemplates:
+                        application/json: ''
+                PassthroughBehavior: WHEN_NO_MATCH
+                RequestTemplates:
+                    application/json: '{"statusCode": 200}'
+                Type: MOCK
+            MethodResponses:
+                - StatusCode: 200
+                  ResponseModels:
+                    application/json: 'Empty'
+                  ResponseParameters:
+                    method.response.header.Access-Control-Allow-Headers: false
+                    method.response.header.Access-Control-Allow-Methods: false
+                    method.response.header.Access-Control-Allow-Origin: false
+    FcplApiUserResource:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ParentId: !GetAtt FcplApi.RootResourceId
+            PathPart: user
+    FcplApiUserGet:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiUserResource
+            HttpMethod: GET
+            AuthorizationType: AWS_IAM
+            Integration:
+                IntegrationHttpMethod: POST
+                Type: AWS_PROXY
+                Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUserFunction.Arn}/invocations
+    FcplApiUserOptions:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            AuthorizationType: NONE
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiUserResource
             HttpMethod: OPTIONS
             Integration:
                 IntegrationResponses:
@@ -150,6 +207,7 @@ Resources:
                     S3Bucket: !Ref S3Bucket
                     CachePrefix: "cache/TEST"
                     MaxCacheAgeHours: !Ref MaxCacheAgeHours
+                    UserTableName: !Ref UserTable
             Handler: index.handler
             Role: !GetAtt GetBooksExecutionRole.Arn
             Runtime: nodejs6.10
@@ -161,6 +219,52 @@ Resources:
             FunctionName: !Ref GetBooksFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/books"
+    GetUserExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                - PolicyName: UserTableAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:GetItem"
+                          Resource: !GetAtt UserTable.Arn
+    GetUserFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                ZipFile: |
+                    exports.handler = (event, context, callback) => {
+                        console.log(JSON.stringify(event, null, 2));
+                        console.log(JSON.stringify(context, null, 2));
+                        callback(null, JSON.stringify(event, null, 2));
+                    }
+            Environment:
+                Variables:
+                    UserTableName: !Ref UserTable
+            Handler: index.handler
+            Role: !GetAtt GetUserExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 60
+    GetUserApiPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref GetUserFunction
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user"
     AutoRenewerExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -243,6 +347,8 @@ Outputs:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
     GetBooksFunctionName:
         Value: !Ref GetBooksFunction
+    GetUserFunctionName:
+        Value: !Ref GetUserFunction
     AutoRenewerFunctionName:
         Value: !Ref AutoRenewerFunction
         
