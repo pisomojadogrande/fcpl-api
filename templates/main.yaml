@@ -1,8 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: FCPL account access
 Parameters:
-    FirstUserEmailAddress:
-        Type: String
     FCPLAccountId:
         Type: String
         AllowedPattern: "^[0-9]+$"
@@ -45,16 +43,6 @@ Resources:
     UserPoolClient:
         Type: "AWS::Cognito::UserPoolClient"
         Properties:
-            UserPoolId: !Ref UserPool
-    FirstUser:
-        Type: "AWS::Cognito::UserPoolUser"
-        Properties:
-            DesiredDeliveryMediums:
-                - EMAIL
-            UserAttributes:
-                - Name: email
-                  Value: !Ref FirstUserEmailAddress
-            Username: first_user
             UserPoolId: !Ref UserPool
     FcplApi:
         Type: "AWS::ApiGateway::RestApi"
