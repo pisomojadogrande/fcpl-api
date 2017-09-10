@@ -44,6 +44,48 @@ Resources:
         Type: "AWS::Cognito::UserPoolClient"
         Properties:
             UserPoolId: !Ref UserPool
+    IdentityPool:
+        Type: "AWS::Cognito::IdentityPool"
+        Properties:
+            AllowUnauthenticatedIdentities: false
+            CognitoIdentityProviders:
+                - ClientId: !Ref UserPoolClient
+                  ProviderName: !GetAtt UserPool.ProviderName
+                  ServerSideTokenCheck: true
+    IdentityPoolRoleAttachment:
+        Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+        Properties:
+            IdentityPoolId: !Ref IdentityPool
+            RoleMappings:
+                (!Ref UserPoolClient):
+                    Type: Token
+            Roles:
+                authenticated: !GetAtt IdentityPoolAuthenticatedRole.Arn
+    IdentityPoolAuthenticatedRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Federated:
+                            - "cognito-identity.amazonaws.com"
+                      Action: "sts:AssumeRole"
+                      Condition:
+                        StringEquals:
+                            "cognito-identity.amazonaws.com:aud": !Ref UserPool
+                        "ForAnyValue:StringLike":
+                            "cognito-identity.amazonaws.com:amr": "authenticated"
+            Policies:
+                - PolicyName: APIAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "execute-api:Invoke"        
+                          Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*"
     UserTable:
         Type: "AWS::DynamoDB::Table"
         Properties:
@@ -339,6 +381,8 @@ Outputs:
         Value: !GetAtt UserPool.Arn
     UserPoolClientId:
         Value: !Ref UserPoolClient
+    IdentityPoolId:
+        Value: !Ref IdentityPool
     FcplApiEndpoint:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
     GetBooksFunctionName:
