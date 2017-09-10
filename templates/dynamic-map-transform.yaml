@@ -1,0 +1,65 @@
+# lambda to create map datatypes with dynamic keys #
+# input format:                   output format:
+#   AttributeName: MyKey      ->    { 
+#   Entries:                          "MyKey": {
+#     - Key: Key1                       "Key1": <value1>
+#       Value: <value1>                 "Key2": <value2>
+#     - Key: Key2                     }
+#       Value: <value2>             }
+#
+#  to retrieve just the map object, use: !GetAtt ResourceName.MyKey
+#
+# Pasted from https://forums.aws.amazon.com/thread.jspa?threadID=255584&tstart=0
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Dynamic map transform.  Use this when you need dynamic values in the keys of a Cloudformation map.
+Resources:
+    DynamicMapTransformLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        Description: Transform to generate maps with computed keys
+        Handler: index.handler
+        Role: !GetAtt DynamicMapTransformRole.Arn
+        Runtime: nodejs6.10
+        Code:
+          ZipFile: |
+            const { send, SUCCESS, ERROR } = require('cfn-response');
+            exports.handler = (event, context, callback) => {
+              console.log(JSON.stringify(event, null, 2));
+              const { RequestType, ResourceProperties: props = { } } = event;
+              const { Entries: entries = [ ], AttributeName: attName } = props;
+     
+              switch(RequestType) {
+                case 'Create':
+                case 'Update':
+                  const result = { };
+                  for (let i = 0; i < entries.length; i++) {
+                    const { Key, Value } = entries[i]
+                    if (Key) {
+                      result[Key] = Value
+                    }
+                  }
+                  send(event, context, SUCCESS, { [attName]: result });
+                  break;
+                case 'Delete':
+                  send(event, context, SUCCESS);
+                  break;
+              }
+            };
+    DynamicMapTransformRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+Outputs:
+    DynamicMapTransformer:
+        Value: !GetAtt DynamicMapTransformLambda.Arn
+        Export:
+            Name: DynamicMapTransformer

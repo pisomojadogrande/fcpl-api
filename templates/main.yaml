@@ -52,13 +52,21 @@ Resources:
                 - ClientId: !Ref UserPoolClient
                   ProviderName: !GetAtt UserPool.ProviderName
                   ServerSideTokenCheck: true
+    IdentityPoolRoleAttachmentMapping:
+        Type: Custom::DynamicMapTransform
+        Properties:
+            ServiceToken: !ImportValue DynamicMapTransformer
+            AttributeName: IdentityPoolRoleMappings
+            Entries:
+                - Key: !Sub ${UserPool.ProviderName}:${UserPoolClient}
+                  Value:
+                    Type: Token
+                    AmbiguousRoleResolution: Deny
     IdentityPoolRoleAttachment:
         Type: "AWS::Cognito::IdentityPoolRoleAttachment"
         Properties:
             IdentityPoolId: !Ref IdentityPool
-            RoleMappings:
-                (!Ref UserPoolClient):
-                    Type: Token
+            RoleMappings: !GetAtt IdentityPoolRoleAttachmentMapping.IdentityPoolRoleMappings
             Roles:
                 authenticated: !GetAtt IdentityPoolAuthenticatedRole.Arn
     IdentityPoolAuthenticatedRole:
