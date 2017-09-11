@@ -96,7 +96,6 @@ var BooksTable = React.createClass({
             const loginKey = 'cognito-idp.' + AWS_REGION + '.amazonaws.com/' + USER_POOL_ID;
             const loginMap = {};
             loginMap[loginKey] = jwtToken;
-            //AWS.config.credentials.get(this.onIdentityCredentials);
             const that = this;
             CognitoIdentity.getId({
                 IdentityPoolId: IDENTITY_POOL_ID,
@@ -104,11 +103,9 @@ var BooksTable = React.createClass({
             }, function(err, data) {
                 if (err) alert('getId error ' + err);
                 else {
-                    //alert(JSON.stringify(data));
                     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
                         IdentityPoolId: IDENTITY_POOL_ID,
-                        IdentityId: data.IdentityId,
-                        //RoleArn: COGNITO_AUTHENTICATED_ROLE_ARN,
+                        //IdentityId: data.IdentityId,
                         Logins: loginMap
                     });
                     AWS.config.credentials.get(that.onIdentityCredentials);
@@ -120,7 +117,7 @@ var BooksTable = React.createClass({
     },
     onIdentityCredentials: function(err, data) {
         if (err) alert('error: ' + err);
-        else alert(JSON.stringify(data));
+        else alert(AWS.config.credentials.sessionToken);
     },
     onRefreshClicked: function() {
         this.startLoad(true);

@@ -80,10 +80,10 @@ Resources:
                       Principal:
                         Federated:
                             - "cognito-identity.amazonaws.com"
-                      Action: "sts:AssumeRole"
+                      Action: "sts:AssumeRoleWithWebIdentity"
                       Condition:
                         StringEquals:
-                            "cognito-identity.amazonaws.com:aud": !Ref UserPool
+                            "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
                         "ForAnyValue:StringLike":
                             "cognito-identity.amazonaws.com:amr": "authenticated"
             Policies:
@@ -105,10 +105,10 @@ Resources:
                       Principal:
                         Federated:
                             - "cognito-identity.amazonaws.com"
-                      Action: "sts:AssumeRole"
+                      Action: "sts:AssumeRoleWithWebIdentity"
                       Condition:
                         StringEquals:
-                            "cognito-identity.amazonaws.com:aud": !Ref UserPool
+                            "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
                         "ForAnyValue:StringLike":
                             "cognito-identity.amazonaws.com:amr": "unauthenticated"
     UserTable:

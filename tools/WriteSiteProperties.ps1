@@ -20,7 +20,6 @@ function WriteSiteProperties(
         @{OutputKey = 'UserPoolId'; PropsKey = 'USER_POOL_ID'},
         @{OutputKey = 'UserPoolClientId'; PropsKey = 'USER_POOL_CLIENT_ID'},
         @{OutputKey = 'IdentityPoolId'; PropsKey = 'IDENTITY_POOL_ID'},
-        @{OutputKey = 'IdentityPoolAuthenticatedRoleArn'; PropsKey = 'COGNITO_AUTHENTICATED_ROLE_ARN'},
         @{OutputKey = 'Region'; PropsKey = 'AWS_REGION'}
    )
    
