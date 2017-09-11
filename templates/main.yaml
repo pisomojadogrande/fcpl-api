@@ -61,7 +61,7 @@ Resources:
                 - Key: !Sub ${UserPool.ProviderName}:${UserPoolClient}
                   Value:
                     Type: Token
-                    AmbiguousRoleResolution: Deny
+                    AmbiguousRoleResolution: AuthenticatedRole
     IdentityPoolRoleAttachment:
         Type: "AWS::Cognito::IdentityPoolRoleAttachment"
         Properties:
@@ -399,4 +399,6 @@ Outputs:
         Value: !Ref GetUserFunction
     AutoRenewerFunctionName:
         Value: !Ref AutoRenewerFunction
+    Region:
+        Value: !Ref AWS::Region
         

@@ -2,6 +2,17 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout } from './layout'
 
+const AWS = require('aws-sdk');
+AWS.config.region = AWS_REGION;
+const CognitoIdentity = new AWS.CognitoIdentity();
+
+function guid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 const IndexStyles = {
     tableStyle: {
         marginTop: '20px',
@@ -81,9 +92,22 @@ var BooksTable = React.createClass({
         const jwtToken = url.searchParams.get('token');
         if (!jwtToken) {
             window.location = './signin.html';
+        } else {
+            const loginKey = 'cognito-idp.' + AWS_REGION + '.amazonaws.com/' + USER_POOL_ID;
+            const loginMap = {};
+            loginMap[loginKey] = jwtToken;
+            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                IdentityPoolId: IDENTITY_POOL_ID,
+                Logins: loginMap
+            });
+            AWS.config.credentials.get(this.onIdentityCredentials);
         }
-
+        
         this.startLoad();
+    },
+    onIdentityCredentials: function(err, data) {
+        if (err) alert('error: ' + err);
+        else alert(JSON.stringify(data));
     },
     onRefreshClicked: function() {
         this.startLoad(true);
