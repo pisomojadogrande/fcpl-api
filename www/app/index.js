@@ -108,7 +108,7 @@ var BooksTable = React.createClass({
                     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
                         IdentityPoolId: IDENTITY_POOL_ID,
                         IdentityId: data.IdentityId,
-                        RoleArn: COGNITO_AUTHENTICATED_ROLE_ARN,
+                        //RoleArn: COGNITO_AUTHENTICATED_ROLE_ARN,
                         Logins: loginMap
                     });
                     AWS.config.credentials.get(that.onIdentityCredentials);
