@@ -408,6 +408,8 @@ Outputs:
         Value: !Ref UserPoolClient
     IdentityPoolId:
         Value: !Ref IdentityPool
+    IdentityPoolAuthenticatedRoleArn:
+        Value: !GetAtt IdentityPoolAuthenticatedRole.Arn
     FcplApiEndpoint:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
     GetBooksFunctionName:

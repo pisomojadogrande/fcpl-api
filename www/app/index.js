@@ -98,6 +98,7 @@ var BooksTable = React.createClass({
             loginMap[loginKey] = jwtToken;
             AWS.config.credentials = new AWS.CognitoIdentityCredentials({
                 IdentityPoolId: IDENTITY_POOL_ID,
+                RoleArn: COGNITO_AUTHENTICATED_ROLE_ARN,
                 Logins: loginMap
             });
             AWS.config.credentials.get(this.onIdentityCredentials);
