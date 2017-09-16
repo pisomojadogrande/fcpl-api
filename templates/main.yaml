@@ -70,6 +70,15 @@ Resources:
                 - !GetAtt UserPool.Arn
             RestApiId: !Ref FcplApi
             Type: COGNITO_USER_POOLS
+    FcplApiGatewayResponse:
+        Type: "AWS::ApiGateway::GatewayResponse"
+        Properties:
+            ResponseParameters:
+                "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+                "gatewayresponse.header.Access-Control-Allow-Headers": "'*'"
+            ResponseType: UNAUTHORIZED
+            RestApiId: !Ref FcplApi
+            StatusCode: "401"
     FcplApiBooksResource:
         Type: "AWS::ApiGateway::Resource"
         Properties:

@@ -89,7 +89,7 @@ var BooksTable = React.createClass({
             }
         });
         req.addEventListener('error', function(e) {
-            alert('onError ' + JSON.stringify(Object.keys(req)));
+            alert('onError ' + req.status);
             that.setState({
                 // TODO isLoading: false,
                 lastError: 'Error retrieving your info.  Please try again later: ' + e
