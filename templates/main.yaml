@@ -44,73 +44,6 @@ Resources:
         Type: "AWS::Cognito::UserPoolClient"
         Properties:
             UserPoolId: !Ref UserPool
-    IdentityPool:
-        Type: "AWS::Cognito::IdentityPool"
-        Properties:
-            AllowUnauthenticatedIdentities: false
-            CognitoIdentityProviders:
-                - ClientId: !Ref UserPoolClient
-                  ProviderName: !GetAtt UserPool.ProviderName
-                  ServerSideTokenCheck: true
-    IdentityPoolRoleAttachmentMapping:
-        Type: Custom::DynamicMapTransform
-        Properties:
-            ServiceToken: !ImportValue DynamicMapTransformer
-            AttributeName: IdentityPoolRoleMappings
-            Entries:
-                - Key: !Sub ${UserPool.ProviderName}:${UserPoolClient}
-                  Value:
-                    Type: Token
-                    AmbiguousRoleResolution: AuthenticatedRole
-    IdentityPoolRoleAttachment:
-        Type: "AWS::Cognito::IdentityPoolRoleAttachment"
-        Properties:
-            IdentityPoolId: !Ref IdentityPool
-            RoleMappings: !GetAtt IdentityPoolRoleAttachmentMapping.IdentityPoolRoleMappings
-            Roles:
-                authenticated: !GetAtt IdentityPoolAuthenticatedRole.Arn
-                unauthenticated: !GetAtt IdentityPoolUnauthenticatedRole.Arn
-    IdentityPoolAuthenticatedRole:
-        Type: "AWS::IAM::Role"
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    - Effect: Allow
-                      Principal:
-                        Federated:
-                            - "cognito-identity.amazonaws.com"
-                      Action: "sts:AssumeRoleWithWebIdentity"
-                      Condition:
-                        StringEquals:
-                            "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
-                        "ForAnyValue:StringLike":
-                            "cognito-identity.amazonaws.com:amr": "authenticated"
-            Policies:
-                - PolicyName: APIAccess
-                  PolicyDocument:
-                    Version: "2012-10-17"
-                    Statement:
-                        - Effect: Allow
-                          Action:
-                            - "execute-api:Invoke"        
-                          Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*"
-    IdentityPoolUnauthenticatedRole:
-        Type: "AWS::IAM::Role"
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    - Effect: Allow
-                      Principal:
-                        Federated:
-                            - "cognito-identity.amazonaws.com"
-                      Action: "sts:AssumeRoleWithWebIdentity"
-                      Condition:
-                        StringEquals:
-                            "cognito-identity.amazonaws.com:aud": !Ref IdentityPool
-                        "ForAnyValue:StringLike":
-                            "cognito-identity.amazonaws.com:amr": "unauthenticated"
     UserTable:
         Type: "AWS::DynamoDB::Table"
         Properties:
@@ -128,6 +61,15 @@ Resources:
         Properties:
             Description: FCPL API
             Name: "fcpl-api"
+    FcplApiAuthorizer:
+        Type: "AWS::ApiGateway::Authorizer"
+        Properties:
+            Name: pisomojado-fcpl-user-pool-authorizer
+            IdentitySource: "method.request.header.Authorization"
+            ProviderARNs:
+                - !GetAtt UserPool.Arn
+            RestApiId: !Ref FcplApi
+            Type: COGNITO_USER_POOLS
     FcplApiBooksResource:
         Type: "AWS::ApiGateway::Resource"
         Properties:
@@ -187,7 +129,8 @@ Resources:
             RestApiId: !Ref FcplApi
             ResourceId: !Ref FcplApiUserResource
             HttpMethod: GET
-            AuthorizationType: AWS_IAM
+            AuthorizationType: COGNITO_USER_POOLS
+            AuthorizerId: !Ref FcplApiAuthorizer
             Integration:
                 IntegrationHttpMethod: POST
                 Type: AWS_PROXY
@@ -406,10 +349,6 @@ Outputs:
         Value: !GetAtt UserPool.Arn
     UserPoolClientId:
         Value: !Ref UserPoolClient
-    IdentityPoolId:
-        Value: !Ref IdentityPool
-    IdentityPoolAuthenticatedRoleArn:
-        Value: !GetAtt IdentityPoolAuthenticatedRole.Arn
     FcplApiEndpoint:
         Value: !Sub "https://${FcplApi}.execute-api.${AWS::Region}.amazonaws.com/${FcplApiStage}"
     GetBooksFunctionName:
@@ -418,6 +357,4 @@ Outputs:
         Value: !Ref GetUserFunction
     AutoRenewerFunctionName:
         Value: !Ref AutoRenewerFunction
-    Region:
-        Value: !Ref AWS::Region
         

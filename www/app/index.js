@@ -2,17 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout } from './layout'
 
-const AWS = require('aws-sdk');
-AWS.config.region = AWS_REGION;
-const CognitoIdentity = new AWS.CognitoIdentity();
-
-function guid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
 const IndexStyles = {
     tableStyle: {
         marginTop: '20px',
@@ -87,37 +76,36 @@ var BooksTable = React.createClass({
         req.open('GET', url);
         req.send();
     },
+    startGetUser: function(jwtToken) {
+        const req = new XMLHttpRequest();
+        const that = this;
+        req.addEventListener('load', function() {
+            const response = JSON.parse(this.responseText);
+            alert(this.responseText);
+            // TODO redirect to setup or populate user info and continue fetching books
+        });
+        req.addEventListener('error', function(e) {
+            that.setState({
+                // TODO isLoading: false,
+                lastError: 'Error retrieving your info.  Please try again later: ' + e
+            });
+        });
+        var url = this.props.endpoint + '/user';
+        req.open('GET', url);
+        req.setRequestHeader('Authorization', jwtToken);
+        req.send();
+    },
     componentDidMount: function() {
         const url = new URL(window.location.href);
         const jwtToken = url.searchParams.get('token');
         if (!jwtToken) {
             window.location = './signin.html';
         } else {
-            const loginKey = 'cognito-idp.' + AWS_REGION + '.amazonaws.com/' + USER_POOL_ID;
-            const loginMap = {};
-            loginMap[loginKey] = jwtToken;
-            const that = this;
-            CognitoIdentity.getId({
-                IdentityPoolId: IDENTITY_POOL_ID,
-                Logins: loginMap
-            }, function(err, data) {
-                if (err) alert('getId error ' + err);
-                else {
-                    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-                        IdentityPoolId: IDENTITY_POOL_ID,
-                        //IdentityId: data.IdentityId,
-                        Logins: loginMap
-                    });
-                    AWS.config.credentials.get(that.onIdentityCredentials);
-                }
-            });
+            this.startGetUser(jwtToken);
         }
         
+        // TODO: Don't start this until after getting the user
         this.startLoad();
-    },
-    onIdentityCredentials: function(err, data) {
-        if (err) alert('error: ' + err);
-        else alert(AWS.config.credentials.sessionToken);
     },
     onRefreshClicked: function() {
         this.startLoad(true);
