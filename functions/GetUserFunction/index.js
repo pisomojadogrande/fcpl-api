@@ -1,6 +1,7 @@
 const AWS = require('aws-sdk');
 
 const ddb = new AWS.DynamoDB();
+const tableName = process.env.UserTableName;
 
 ACAO_HEADERS = {
     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
@@ -10,9 +11,35 @@ ACAO_HEADERS = {
 
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event, null, 2));
-    callback(null, {
-        statusCode: 200,
-        headers: ACAO_HEADERS,
-        body: JSON.stringify(event)
+    
+    if (!event.requestContext.authorizer || !event.requestContext.authorizer.claims) {
+        console.error(`Invalid requestContext ${JSON.stringify(event.requestContext)}`);
+        callback('Unexpected request context');
+    }
+    
+    const identityId = event.requestContext.authorizer.claims.sub;
+    console.log(`Caller is ${identityId}`);
+    
+    const params = {
+        TableName: tableName,
+        Key: {
+            IdentityId: {
+                S: identityId
+            }
+        }
+    };
+    ddb.getItem(params, (err, data) => {
+        const result = {
+            statusCode: 200,
+            headers: ACAO_HEADERS
+        };
+        if (err) result.body = JSON.stringify({error: err});
+        else {
+            result.body = JSON.stringify(data);
+            if (!data.Item) {
+                result.statusCode = 404;
+            }
+        }
+        callback(null, result);
     });
 };

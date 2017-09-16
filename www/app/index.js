@@ -80,11 +80,16 @@ var BooksTable = React.createClass({
         const req = new XMLHttpRequest();
         const that = this;
         req.addEventListener('load', function() {
-            const response = JSON.parse(this.responseText);
-            alert(this.responseText);
-            // TODO redirect to setup or populate user info and continue fetching books
+            if (this.status == 200) {
+                const response = JSON.parse(this.responseText);
+                alert(this.responseText);
+                // TODO redirect to setup or populate user info and continue fetching books
+            } else {
+                alert(this.status);
+            }
         });
         req.addEventListener('error', function(e) {
+            alert('onError ' + JSON.stringify(Object.keys(req)));
             that.setState({
                 // TODO isLoading: false,
                 lastError: 'Error retrieving your info.  Please try again later: ' + e
