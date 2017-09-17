@@ -7,16 +7,20 @@ const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
 
 const S3_BUCKET = process.env.S3Bucket;
-const CACHE_PREFIX = process.env.CachePrefix;
-const LATEST_KEY = CACHE_PREFIX + "/latest.json";
 const MAX_CACHED_AGE_SECS = 3600 * process.env.MaxCacheAgeHours;
 
 const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
+
+const ERROR_INVALID_LOGIN = 'Invalid login';
 
 ACAO_HEADERS = {
     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
     'Access-Control-Allow-Methods': 'GET,OPTIONS',
     'Access-Control-Allow-Origin': '*'
+}
+
+function latestKey(cachePrefix) {
+    return cachePrefix + '/latest.json';
 }
 
 function fetchFromCachePromise(ctx, forceRefresh) {
@@ -26,7 +30,7 @@ function fetchFromCachePromise(ctx, forceRefresh) {
     return new Promise((resolve, reject) =>  {
         const params = {
             Bucket: S3_BUCKET,
-            Key: LATEST_KEY
+            Key: latestKey(ctx.cachePrefix)
         };
         console.log(`S3 request params ${JSON.stringify(params)}`);
         s3.getObject(params, (err, data) => {
@@ -55,7 +59,7 @@ function fetchFromCachePromise(ctx, forceRefresh) {
     });
 }
 
-function putInCachePromise(ctx) {
+function putInCachePromise(ctx, cachePrefix) {
     const content = JSON.stringify(ctx.items, null, 2);
     const md5 = crypto.createHash('md5').update(content).digest('hex');
     const isContentChanged = !(ctx.cachedETag && (ctx.cachedETag == md5));
@@ -66,9 +70,9 @@ function putInCachePromise(ctx) {
     return new Promise((resolve, reject) => {
         // write to both latest.html and a timestamped key;
         // the timestamped key only if something has changed
-        const keys = [LATEST_KEY];
+        const keys = [latestKey(ctx.cachePrefix)];
         if (isContentChanged) {
-            keys.push(`${CACHE_PREFIX}/${(new Date()).toISOString()}.json`);  
+            keys.push(`${ctx.cachePrefix}/${(new Date()).toISOString()}.json`);  
         }
         console.log(`Writing ${content.length} etag=${md5} to ${JSON.stringify(keys)}`);
         const promises = keys.map((s3key) => {
@@ -145,8 +149,8 @@ function fetchHtmlPromise(ctx) {
     return new Promise((resolve, reject) => {
         
         const postData = querystring.stringify({
-            user_id: process.env.FCPLAccountId,
-            password: process.env.FCPLPassword
+            user_id: ctx.libraryCardNumber,
+            password: ctx.libraryPassword
         });
         
         const httpsOptions = {
@@ -186,18 +190,6 @@ function fetchHtmlPromise(ctx) {
     });
 }
 
-function validateHtml(dom) {
-    const errors = htmlparser.DomUtils.getElements({
-        class: (val) => { return val && (val.indexOf('error') > -1); }
-    }, dom);
-    if (errors.length > 0) {
-        console.error(`HTML shows errors: ${JSON.stringify(errors)}`);
-        return false
-    } else {
-        return true;
-    }
-}
-
 function trimAndJoin(dom) {
     const textItems = htmlparser.DomUtils.getElementsByTagType('text', dom);
     return textItems.map((elt) => {
@@ -212,9 +204,10 @@ function readFromDom(dom) {
         id: 'renewitems'
     }, dom);
     if (renewitemsForms.length == 0) {
-        console.error('Missing renewitems form');
-        return null;
+        console.log('No renewitems form; assuming no items');
+        return { items: [] };
     }
+    
     const renewitemsForm = renewitemsForms[0];
     result.renewAction = renewitemsForm.attribs.action;
     
@@ -267,19 +260,40 @@ function readFromDom(dom) {
     return result;
 }
 
+function getError(dom) {
+    const errors = htmlparser.DomUtils.getElements({
+        class: (val) => { return val && (val.indexOf('error') > -1); }
+    }, dom);
+    if (errors.length > 0) {
+        console.error(`HTML shows errors: ${JSON.stringify(errors)}`);
+        return trimAndJoin(errors[0]);
+    } else {
+        return undefined;
+    }
+}
+
 function parseHtmlPromise(ctx) {
     return new Promise((resolve, reject) => {
         const handler = new htmlparser.DefaultHandler((err, dom) => {
             if (err) reject(err);
             else {
                 ctx.dom = dom;
-                if (validateHtml(dom)) {
-                    const readResult = readFromDom(dom);
-                    ctx.items = readResult.items;
-                    ctx.renewAction = readResult.renewAction;
-                    resolve(ctx);
+                const error = getError(dom);
+                if (error) {
+                    // The error page says 'Invalid login', but not hardcoding that here;
+                    // it's the only error that would get us a 200.
+                    console.error(`error: ${error}`);
+                    reject({errorCode: ERROR_INVALID_LOGIN});
                 } else {
-                    reject('HTML contains errors')
+                    const readResult = readFromDom(dom);
+                    if (readResult) {
+                        ctx.items = readResult.items;
+                        ctx.renewAction = readResult.renewAction;
+                        resolve(ctx);
+                    } else {
+                        console.log(ctx.content);
+                        reject('Unexpected response content')
+                    }
                 }
             }
         }, {verbose: false});
@@ -288,12 +302,42 @@ function parseHtmlPromise(ctx) {
     });
 }
 
+function completeCallback(callback, error, data) {
+    const result = {
+        headers: ACAO_HEADERS
+    };
+    if (error) {
+        if (error.errorCode == ERROR_INVALID_LOGIN) {
+            result.statusCode = 400;
+        } else {
+            result.statusCode = 500;
+        }
+        result.body = JSON.stringify(error);
+    } else {
+        result.statusCode = 200;
+        result.body = JSON.stringify(data);
+    }
+    console.log(`Result: ${JSON.stringify(result)}`);
+    callback(null, result);
+}
 
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
-    const ctx = {};
-    const forceRefresh = (event.queryStringParameters && event.queryStringParameters.forceRefresh);
+    var forceRefresh = false;
+    const ctx = {
+        libraryCardNumber: process.env.FCPLAccountId,
+        libraryPassword: process.env.FCPLPassword,
+    };
+    if (event.queryStringParameters) {
+        forceRefresh = event.queryStringParameters.forceRefresh;
+        if (event.queryStringParameters.libraryCardNumber) {
+            ctx.libraryCardNumber = event.queryStringParameters.libraryCardNumber;
+            ctx.libraryPassword = event.queryStringParameters.libraryPassword;
+            console.log(`Using non-default account ${ctx.libraryCardNumber}`);
+        }
+    }
+    ctx.cachePrefix = 'cache/' + ctx.libraryCardNumber;
       
     fetchFromCachePromise(ctx, forceRefresh).then((ctx) => {
         if (ctx.items) return Promise.resolve(ctx);
@@ -309,16 +353,11 @@ exports.handler = (event, context, callback) => {
         if (forceRefresh) {
             result.renewAction = ctx.renewAction;
         }
-        console.log(JSON.stringify(result));
-        callback(null, {
-            statusCode: 200,
-            headers: ACAO_HEADERS,
-            body: JSON.stringify(result)
-        });
+        completeCallback(callback, null, result);
     }).catch((e) => {
-        console.error(JSON.stringify(e));
-        callback(e); 
+        completeCallback(callback, e);
     });
  
 };
+
 
