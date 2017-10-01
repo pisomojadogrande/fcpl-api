@@ -83,9 +83,16 @@ var BooksTable = React.createClass({
             if (this.status == 200) {
                 const response = JSON.parse(this.responseText);
                 alert(this.responseText);
-                // TODO redirect to setup or populate user info and continue fetching books
+                // TODO fetch bookds from here
+            } else if (this.status == 401) {
+                window.location = './signin.html';
+            } else if (this.status == 404) {
+                window.location = './accountsetup.html?token=' + jwtToken;
             } else {
-                alert(this.status);
+                that.setState({
+                    // TODO isLoading: false
+                    lastError: 'Error retrieving your info: ' + this.status + ': Please try again later'
+                });
             }
         });
         req.addEventListener('error', function(e) {

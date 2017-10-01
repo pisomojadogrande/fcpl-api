@@ -35,9 +35,12 @@ exports.handler = (event, context, callback) => {
         };
         if (err) result.body = JSON.stringify({error: err});
         else {
-            result.body = JSON.stringify(data);
+            result.body = JSON.stringify(data.Item);
             if (!data.Item) {
+                console.log(`Caller ${identityId} not found`);
                 result.statusCode = 404;
+            } else {
+                console.log(`Caller ${identityId} is library card ${data.Item.LibraryCardNumber.S}; updated ${data.Item.LastUpdated.S}`);
             }
         }
         callback(null, result);

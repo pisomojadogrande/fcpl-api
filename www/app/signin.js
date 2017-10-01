@@ -5,11 +5,6 @@ import { Layout, LayoutStyles } from './layout'
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
 
-const Styles = {
-    warningStyle: {
-        color: 'red'
-    }
-};
 
 var SignIn = React.createClass({
     
@@ -133,7 +128,7 @@ var SignIn = React.createClass({
                     <label htmlFor="newPasswordAgain">Password (again)</label>
                     <input id="newPasswordAgain" type="password" onChange={this.onNewPasswordAgainChange} placeholder="Password"/>
                     
-                    <label style={Styles.warningStyle}>{this.state.passwordWarning}</label>
+                    <label style={LayoutStyles.warningTextStyle}>{this.state.passwordWarning}</label>
                 </fieldset>
             );
         }

@@ -18,8 +18,7 @@ function WriteSiteProperties(
    $stackOutputMap = (
         @{OutputKey = 'FcplApiEndpoint'; PropsKey = 'FCPL_API_ENDPOINT'},
         @{OutputKey = 'UserPoolId'; PropsKey = 'USER_POOL_ID'},
-        @{OutputKey = 'UserPoolClientId'; PropsKey = 'USER_POOL_CLIENT_ID'},
-        @{OutputKey = 'Region'; PropsKey = 'AWS_REGION'}
+        @{OutputKey = 'UserPoolClientId'; PropsKey = 'USER_POOL_CLIENT_ID'}
    )
    
    $propsObj = @{}

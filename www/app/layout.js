@@ -25,6 +25,16 @@ export const LayoutStyles = {
         marginLeft: '-150px',
         marginTop: '50px',
         padding: '10px'
+    },
+    warningTextStyle: {
+        color: 'red'
+    },
+    errorBarStyle: {
+        backgroundColor: '#c90014',
+        color: 'white',
+        width: '100%',
+        paddingLeft: '5px',
+        marginTop: '10px'
     }
 }; 
 
