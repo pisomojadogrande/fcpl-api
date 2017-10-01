@@ -5,6 +5,10 @@ import { Layout, LayoutStyles } from './layout'
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 const AWS = require('aws-sdk');
 
+const jwt = require('jsonwebtoken');
+
+// Expire the JWT token cookie 10min earlier than the JWT actually expires
+const JWT_COOKIE_EXPIRATION_BUFFER_MSEC = 600 * 1000;
 
 var SignIn = React.createClass({
     
@@ -78,7 +82,21 @@ var SignIn = React.createClass({
             onSuccess: function(result) {
                 //const jwtToken = result.getAccessToken().getJwtToken();
                 const jwtToken = result.getIdToken().getJwtToken();
-                window.location = './index.html?token=' + jwtToken;
+                const jwtTokenDecoded = jwt.decode(jwtToken);
+                
+                // Store the JWT as a cookie.  This is vulnerable to XSRF attacks,
+                // but the value of this credential is limited because it's a library
+                // account, and it expires in an hour.
+                const jwtCookieExpiration = new Date(jwtTokenDecoded.exp * 1000 - JWT_COOKIE_EXPIRATION_BUFFER_MSEC);
+                var cookieVal = "idToken=" + jwtToken + ";expires=" + jwtCookieExpiration.toUTCString();
+                // Unless testing locally, require the cookie to be transferred over https
+                if (document.location.protocol != 'file:') {
+                    cookieVal += ";secure";
+                }
+                document.cookie = cookieVal;
+                
+                // Now that we have a token, back to the main page, where auth should succeed
+                window.location = './index.html';
             },
             onFailure: function(err) {
                 that.setState({

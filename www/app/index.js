@@ -108,8 +108,7 @@ var BooksTable = React.createClass({
         req.send();
     },
     componentDidMount: function() {
-        const url = new URL(window.location.href);
-        const jwtToken = url.searchParams.get('token');
+        const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
         if (!jwtToken) {
             window.location = './signin.html';
         } else {
