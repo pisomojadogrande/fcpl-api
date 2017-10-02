@@ -23,6 +23,8 @@ const IndexStyles = {
 };
 
 var BooksTable = React.createClass({
+    libraryCardNumber: undefined,
+    libraryPassword: undefined,
     loadingState: {
         isLoading: true,
         books: [
@@ -51,6 +53,45 @@ var BooksTable = React.createClass({
             };
         });
     },
+    componentDidMount: function() {
+        const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+        if (!jwtToken) {
+            window.location = './signin.html';
+        } else {
+            this.startGetUser();
+        }
+    },
+    startGetUser: function() {
+        const req = new XMLHttpRequest();
+        const that = this;
+        req.addEventListener('load', function() {
+            if (this.status == 200) {
+                const response = JSON.parse(this.responseText);
+                that.libraryCardNumber = response.libraryCardNumber;
+                that.libraryPassword = response.libraryPassword;
+                that.startLoad(false);
+            } else if (this.status == 401) {
+                window.location = './signin.html';
+            } else if (this.status == 404) {
+                window.location = './accountsetup.html';
+            } else {
+                that.setState({
+                    isLoading: false,
+                    lastError: 'Error retrieving your info: ' + this.status + ': Please try again later'
+                });
+            }
+        });
+        req.addEventListener('error', function(e) {
+            that.setState({
+                isLoading: false,
+                lastError: 'Error retrieving your info.  Please try again later: ' + e
+            });
+        });
+        var url = this.props.endpoint + '/user';
+        req.open('GET', url);
+        req.setRequestHeader('Authorization', jwtToken);
+        req.send();
+    },
     startLoad: function(forceRefresh) {
         const req = new XMLHttpRequest();
         const that = this;
@@ -69,54 +110,15 @@ var BooksTable = React.createClass({
                 lastError: 'Error fetching books.  Please try again later.'
             });
         });
-        var url = this.props.endpoint + '/books';
+        var url = this.props.endpoint + '/books?libraryCardNumber='
+            + this.libraryCardNumber
+            + '&libraryPassword='
+            + this.libraryPassword;
         if (forceRefresh) {
-            url += '?forceRefresh=true';
+            url += '&forceRefresh=true';
         }
         req.open('GET', url);
         req.send();
-    },
-    startGetUser: function(jwtToken) {
-        const req = new XMLHttpRequest();
-        const that = this;
-        req.addEventListener('load', function() {
-            if (this.status == 200) {
-                const response = JSON.parse(this.responseText);
-                alert(this.responseText);
-                // TODO fetch bookds from here
-            } else if (this.status == 401) {
-                window.location = './signin.html';
-            } else if (this.status == 404) {
-                window.location = './accountsetup.html?token=' + jwtToken;
-            } else {
-                that.setState({
-                    // TODO isLoading: false
-                    lastError: 'Error retrieving your info: ' + this.status + ': Please try again later'
-                });
-            }
-        });
-        req.addEventListener('error', function(e) {
-            alert('onError ' + req.status);
-            that.setState({
-                // TODO isLoading: false,
-                lastError: 'Error retrieving your info.  Please try again later: ' + e
-            });
-        });
-        var url = this.props.endpoint + '/user';
-        req.open('GET', url);
-        req.setRequestHeader('Authorization', jwtToken);
-        req.send();
-    },
-    componentDidMount: function() {
-        const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-        if (!jwtToken) {
-            window.location = './signin.html';
-        } else {
-            this.startGetUser(jwtToken);
-        }
-        
-        // TODO: Don't start this until after getting the user
-        this.startLoad();
     },
     onRefreshClicked: function() {
         this.startLoad(true);
@@ -178,12 +180,14 @@ var BooksTable = React.createClass({
     }
 });
 
+const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+
 const endpoint = FCPL_API_ENDPOINT;
 ReactDOM.render(
     <Layout>
         <div className="pure-u-1-6"></div>
         <div className="pure-u-2-3">
-            <BooksTable endpoint={endpoint}/>
+            <BooksTable endpoint={endpoint} idToken={jwtToken}/>
         </div>
         <div className="pure-u-1-6"></div>
     </Layout>,

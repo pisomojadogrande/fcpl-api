@@ -35,13 +35,17 @@ exports.handler = (event, context, callback) => {
         };
         if (err) result.body = JSON.stringify({error: err});
         else {
-            result.body = JSON.stringify(data.Item);
+            const bodyObj = {};
             if (!data.Item) {
                 console.log(`Caller ${identityId} not found`);
                 result.statusCode = 404;
             } else {
-                console.log(`Caller ${identityId} is library card ${data.Item.LibraryCardNumber.S}; updated ${data.Item.LastUpdated.S}`);
+                bodyObj.libraryCardNumber = data.Item.LibraryCardNumber.S;
+                bodyObj.libraryPassword = data.Item.LibraryPassword.S;
+                bodyObj.lastUpdated = data.Item.LastUpdated.S;
+                console.log(`Caller ${identityId} is ${JSON.stringify(bodyObj)}`);
             }
+            result.body = JSON.stringify(bodyObj);
         }
         callback(null, result);
     });
