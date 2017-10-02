@@ -69,7 +69,7 @@ function validateCredentialsPromise(libraryCardNumber, libraryPassword) {
     });
 }
 
-function writeCredentialsPromise(identityId, libraryCardNumber, libraryPassword) {
+function writeCredentialsPromise(identityId, cognitoUserName, libraryCardNumber, libraryPassword) {
     return new Promise((resolve, reject) => {
         const timestamp = (new Date()).toISOString();
         console.log(`Writing ${identityId} - ${libraryCardNumber} @${timestamp}`);
@@ -78,6 +78,9 @@ function writeCredentialsPromise(identityId, libraryCardNumber, libraryPassword)
             Item: {
                 IdentityId: {
                     S: identityId
+                },
+                CognitoUserName: {
+                    S: cognitoUserName
                 },
                 LibraryCardNumber: {
                     S: libraryCardNumber
@@ -113,12 +116,13 @@ exports.handler = (event, context, callback) => {
     }
     
     const identityId = event.requestContext.authorizer.claims.sub;
+    const cognitoUserName = event.requestContext.authorizer.claims['cognito:username'];
     const libraryCardNumber = event.queryStringParameters.libraryCardNumber;
     const libraryPassword = event.queryStringParameters.libraryPassword;
     console.log(`Caller is ${identityId}, library card ${libraryCardNumber}`);
     
     validateCredentialsPromise(libraryCardNumber, libraryPassword).then(() => {
-        return writeCredentialsPromise(identityId, libraryCardNumber, libraryPassword);
+        return writeCredentialsPromise(identityId, cognitoUserName, libraryCardNumber, libraryPassword);
     }).then(() => {
         completeCallback(callback, null, {identityId: identityId});
     }).catch((e) => {
