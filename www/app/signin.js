@@ -100,9 +100,9 @@ var SignIn = React.createClass({
             },
             onFailure: function(err) {
                 that.setState({
-                    isSigningIn: false
+                    isSigningIn: false,
+                    lastError: err.message
                 });
-                alert("Failure " + err);
             },
             newPasswordRequired: function(userAttributes, requiredAttributes) {
                 that.sessionContext = this;
@@ -150,11 +150,20 @@ var SignIn = React.createClass({
                 </fieldset>
             );
         }
+        var errorBar = '';
+        if (this.state.lastError) {
+            errorBar = (
+                <div style={LayoutStyles.errorBarStyle}>
+                    <h3>{this.state.lastError}</h3>
+                </div>
+            );
+        }
         return(
             <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
                 <div style={LayoutStyles.centerFormStyle}>
                     <form className="pure-form pure-form-stacked">
                         <fieldset>
+                            {errorBar}
                             <legend>
                                 <h3>Sign in</h3>
                             </legend>
