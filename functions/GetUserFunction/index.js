@@ -42,6 +42,7 @@ exports.handler = (event, context, callback) => {
             } else {
                 bodyObj.libraryCardNumber = data.Item.LibraryCardNumber.S;
                 bodyObj.libraryPassword = data.Item.LibraryPassword.S;
+                bodyObj.userName = data.Item.CognitoUserName.S;
                 bodyObj.lastUpdated = data.Item.LastUpdated.S;
                 console.log(`Caller ${identityId} is ${JSON.stringify(bodyObj)}`);
             }

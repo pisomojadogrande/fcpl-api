@@ -25,6 +25,7 @@ const IndexStyles = {
 var BooksTable = React.createClass({
     libraryCardNumber: undefined,
     libraryPassword: undefined,
+    userName: undefined,
     loadingState: {
         isLoading: true,
         books: [
@@ -69,6 +70,7 @@ var BooksTable = React.createClass({
                 const response = JSON.parse(this.responseText);
                 that.libraryCardNumber = response.libraryCardNumber;
                 that.libraryPassword = response.libraryPassword;
+                that.userName = response.userName;
                 that.startLoad(false);
             } else if (this.status == 401) {
                 window.location = './signin.html';
@@ -134,6 +136,14 @@ var BooksTable = React.createClass({
             </button>
         );
         var headerCol0 = this.state.isLoading ? spinner : refreshButton;
+        var userIdentity = (<div></div>);
+        if (this.libraryCardNumber && this.userName) {
+            userIdentity = (
+                <div>
+                    Logged in as {this.userName} ({this.libraryCardNumber}).  <a href="./signin.html">Not you?</a>
+                </div>
+            );
+        }
         var tableRows = this.state.books.map((book) => {
             var col0;
             if (this.state.isLoading) {
@@ -161,6 +171,7 @@ var BooksTable = React.createClass({
                 <div style={IndexStyles.errorBarStyle} display={errorDisplay}>
                     <h3>{this.state.lastError}</h3>
                 </div>
+                {userIdentity}
                 <table className="pure-table" style={IndexStyles.tableStyle}>
                     <thead>
                         <tr>
