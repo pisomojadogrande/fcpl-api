@@ -10,6 +10,7 @@ module.exports = {
     accountsetup: './app/accountsetup.js',
     index: './app/index.js',
     layout: './app/layout.js',
+    passwordreset: './app/passwordreset.js',
     signin: './app/signin.js'
   },
   output: {
@@ -44,6 +45,12 @@ module.exports = {
       chunks: ['layout', 'index'],
       template: __dirname + '/app/index.html',
       filename: 'index.html'
+    }),
+    new HtmlWebpackPlugin({
+      inject: 'body',
+      chunks: ['layout', 'passwordreset'],
+      template: __dirname + '/app/passwordreset.html',
+      filename: 'passwordreset.html'
     }),
     new HtmlWebpackPlugin({
       inject: 'body',

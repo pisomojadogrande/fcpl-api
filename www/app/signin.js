@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom'
 import { Layout, LayoutStyles } from './layout'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
-const AWS = require('aws-sdk');
 
 const jwt = require('jsonwebtoken');
 
@@ -175,9 +174,7 @@ var SignIn = React.createClass({
                             <label htmlFor="password">Password</label>
                             <input id="password" type="password" onChange={this.onPasswordChange} placeholder="Password"/>
                             
-                            <label htmlFor="remember" className="pure-checkbox">
-                                <input id="remember" type="checkbox" disabled="true"/>  Remember me
-                            </label>
+                            <a href="./passwordreset.html">Forgot password?</a>
                             
                         </fieldset>
                         {newPasswordFieldSet}

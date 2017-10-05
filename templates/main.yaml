@@ -30,7 +30,7 @@ Resources:
                 - email
             AutoVerifiedAttributes:
                 - email
-            EmailVerificationMessage: 'Your username is {username}, and your verification code is {####}.  Have fun!'
+            EmailVerificationMessage: 'Your verification code is {####}.  Have fun!'
             EmailVerificationSubject: "Email verification for the easier way to use FCPL (from PisoMojado)"
             Policies:
                 PasswordPolicy:
