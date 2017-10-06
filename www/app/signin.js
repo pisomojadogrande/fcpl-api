@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import PropTypes from 'prop-types'
 import { Layout, LayoutStyles } from './layout'
 import { SpinnerSubmitButton } from './controls'
 
@@ -15,9 +16,18 @@ var SignIn = React.createClass({
     userPoolId: USER_POOL_ID,
     userPoolClientId: USER_POOL_CLIENT_ID,
     
+    propTypes: {
+        username: PropTypes.string
+    },
+    getDefaultProps: function() {
+        return {
+            username: ''
+        };
+    },
+    
     getInitialState: function() {
         return {
-            username: '',
+            username: this.props.username,
             password: '',
             needsNewPassword: false,
             newPassword: '',
@@ -169,7 +179,7 @@ var SignIn = React.createClass({
                             </legend>
                             
                             <label htmlFor="username">Username</label>
-                            <input id="username" onChange={this.onUsernameChange} placeholder="username" autoFocus/>
+                            <input id="username" onChange={this.onUsernameChange} placeholder="username" value={this.state.username} autoFocus/>
                             <span className="pure-form-message">required</span>
                             
                             <label htmlFor="password">Password</label>
@@ -190,11 +200,12 @@ var SignIn = React.createClass({
     }
 });
 
-
+const url = new URL(window.location.href);
+const username = url.searchParams.get('username');
 
 ReactDOM.render(
     <Layout>
-        <SignIn />
+        <SignIn username={username}/>
     </Layout>,
     document.getElementById('app')
 );

@@ -12,7 +12,8 @@ module.exports = {
     index: './app/index.js',
     layout: './app/layout.js',
     passwordreset: './app/passwordreset.js',
-    signin: './app/signin.js'
+    signin: './app/signin.js',
+    signup: './app/signup.js'
   },
   output: {
     path: __dirname + '/dist',
@@ -58,6 +59,12 @@ module.exports = {
       chunks: ['layout', 'controls', 'signin'],
       template: __dirname + '/app/signin.html',
       filename: 'signin.html'
+    }),
+    new HtmlWebpackPlugin({
+      inject: 'body',
+      chunks: ['layout', 'controls', 'signup'],
+      template: __dirname + '/app/signup.html',
+      filename: 'signup.html'
     }),
     DefinePlugin
   ]
