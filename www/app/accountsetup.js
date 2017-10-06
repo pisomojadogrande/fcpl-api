@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout, LayoutStyles } from './layout'
+import { SpinnerSubmitButton } from './controls'
 
 var AccountSetup = React.createClass({
     getInitialState: function() {
@@ -60,19 +61,10 @@ var AccountSetup = React.createClass({
         });
     },
     render: function() {
-        const submitButtonDisabled = this.state.loading ||
-                                     !this.state.libraryCardNumberValid ||
+        const submitButtonDisabled = !this.state.libraryCardNumberValid ||
                                      !this.state.libraryPasswordValid;
-        var spinner = '';
-        if (this.state.loading) {
-            spinner = (
-                <i display={displaySpinner}
-                    className="fa fa-refresh fa-spin fa-fw">
-                </i>
-            );
-        }
-        const displaySpinner = this.state.loading ? 'block' : 'none';
         const displayError = this.state.lastError ? 'block' : 'none';
+
         return( 
             <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
                 <div style={LayoutStyles.centerFormStyle}>
@@ -104,14 +96,9 @@ var AccountSetup = React.createClass({
                             <span className="pure-form-message">required</span>
                             
                         </fieldset>
-                        <button type="submit"
-                                disabled={submitButtonDisabled}
-                                className="pure-button pure-button-primary"
-                                style={{marginTop: "10px"}}
-                                onClick={this.onSubmitButtonClicked}>
-                            Submit
-                        </button>
-                        {spinner}
+                        <SpinnerSubmitButton loading={this.state.loading}
+                                             disabled={submitButtonDisabled}
+                                             onClick={this.onSubmitButtonClicked}/>
                     </form>
                 </div>
             </div>

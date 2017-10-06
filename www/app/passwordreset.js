@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout, LayoutStyles } from './layout'
+import { SpinnerSubmitButton } from './controls'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
@@ -105,11 +106,9 @@ var PasswordReset = React.createClass({
     render: function() {
         const canEnterNewPassword = this.state.verificationEmailObfuscated;
         
-        const submitButtonDisabled = this.state.isLoading ||
-            canEnterNewPassword ||
-            (this.state.username.length == 0);
+        const submitButtonDisabled = canEnterNewPassword || (this.state.username.length == 0);
         
-        const newPasswordButtonDisabled = this.state.isLoading ||
+        const newPasswordButtonDisabled =
             !canEnterNewPassword ||
             (this.state.verificationCode.length == 0) ||
             (this.state.passwordWarning.length > 0) ||
@@ -131,7 +130,10 @@ var PasswordReset = React.createClass({
                     <input id="newPasswordAgain" type="password" onChange={this.onNewPasswordAgainChange} placeholder="Password"/>
                     
                     <label style={LayoutStyles.warningTextStyle}>{this.state.passwordWarning}</label>
-                   <button type="submit" disabled={newPasswordButtonDisabled} className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSetPasswordButtonClicked}>Set password</button>
+                    <SpinnerSubmitButton loading={this.state.isLoading}
+                                         disabled={newPasswordButtonDisabled}
+                                         submitButtonText='Set password'
+                                         onClick={this.onSetPasswordButtonClicked}/>
                 </fieldset>
             );
         }
@@ -157,7 +159,9 @@ var PasswordReset = React.createClass({
                             <input id="username" onChange={this.onUsernameChange} placeholder="username" autoFocus/>
                             <span className="pure-form-message">required</span>
                         </fieldset>
-                        <button type="submit" disabled={submitButtonDisabled} className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSubmitButtonClicked}>Submit</button>
+                        <SpinnerSubmitButton loading={this.state.isLoading}
+                                             disabled={submitButtonDisabled}
+                                             onClick={this.onSubmitButtonClicked}/>
                         {newPasswordFields}
                     </form>
                 </div>

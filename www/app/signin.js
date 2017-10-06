@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout, LayoutStyles } from './layout'
+import { SpinnerSubmitButton } from './controls'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
@@ -133,7 +134,7 @@ var SignIn = React.createClass({
         }
     },
     render: function() {
-        const submitButtonDisabled = this.state.isSigningIn || (this.state.passwordWarning.length > 0);
+        const submitButtonDisabled = (this.state.passwordWarning.length > 0);
         var newPasswordFieldSet = '';
         if (this.state.needsNewPassword) {
             newPasswordFieldSet = (
@@ -178,7 +179,10 @@ var SignIn = React.createClass({
                             
                         </fieldset>
                         {newPasswordFieldSet}
-                        <button type="submit" disabled={submitButtonDisabled} className="pure-button pure-button-primary" style={{marginTop: "10px"}} onClick={this.onSignInButtonClicked}>Sign in</button>
+                        <SpinnerSubmitButton loading={this.state.isSigningIn}
+                                             disabled={submitButtonDisabled}
+                                             submitButtonText='Sign in'
+                                             onClick={this.onSignInButtonClicked}/>
                     </form>
                 </div>
             </div>

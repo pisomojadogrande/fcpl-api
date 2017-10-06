@@ -8,6 +8,7 @@ console.log('DefinePlugin: ' + JSON.stringify(DefinePlugin));
 module.exports = {
   entry: {
     accountsetup: './app/accountsetup.js',
+    controls: './app/controls.js',
     index: './app/index.js',
     layout: './app/layout.js',
     passwordreset: './app/passwordreset.js',
@@ -36,7 +37,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['layout', 'accountsetup'],
+      chunks: ['layout', 'controls', 'accountsetup'],
       template: __dirname + '/app/accountsetup.html',
       filename: 'accountsetup.html'
     }),
@@ -48,13 +49,13 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['layout', 'passwordreset'],
+      chunks: ['layout', 'controls', 'passwordreset'],
       template: __dirname + '/app/passwordreset.html',
       filename: 'passwordreset.html'
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['layout', 'signin'],
+      chunks: ['layout', 'controls', 'signin'],
       template: __dirname + '/app/signin.html',
       filename: 'signin.html'
     }),
