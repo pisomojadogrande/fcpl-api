@@ -17,17 +17,17 @@ var SignIn = React.createClass({
     userPoolClientId: USER_POOL_CLIENT_ID,
     
     propTypes: {
-        username: PropTypes.string
+        initialUsername: PropTypes.string
     },
     getDefaultProps: function() {
         return {
-            username: ''
+            initialUsername: ''
         };
     },
     
     getInitialState: function() {
         return {
-            username: this.props.username,
+            username: this.props.initialUsername,
             password: '',
             needsNewPassword: false,
             newPassword: '',
@@ -90,22 +90,13 @@ var SignIn = React.createClass({
         const that = this;
         this.cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: function(result) {
-                //const jwtToken = result.getAccessToken().getJwtToken();
-                const jwtToken = result.getIdToken().getJwtToken();
-                const jwtTokenDecoded = jwt.decode(jwtToken);
-                
-                // Store the JWT as a cookie.  This is vulnerable to XSRF attacks,
-                // but the value of this credential is limited because it's a library
-                // account, and it expires in an hour.
-                const jwtCookieExpiration = new Date(jwtTokenDecoded.exp * 1000 - JWT_COOKIE_EXPIRATION_BUFFER_MSEC);
-                var cookieVal = "idToken=" + jwtToken + ";expires=" + jwtCookieExpiration.toUTCString();
-                // Unless testing locally, require the cookie to be transferred over https
-                if (document.location.protocol != 'file:') {
-                    cookieVal += ";secure";
-                }
+                const cookieVal = "username=" + that.state.username;
                 document.cookie = cookieVal;
                 
-                // Now that we have a token, back to the main page, where auth should succeed
+                // This will store a refresh token that will be valid for whatever
+                // the Cognito User Pool was configured (default 30d)
+                that.cognitoUser.cacheTokens();
+                
                 window.location = './index.html';
             },
             onFailure: function(err) {
@@ -201,11 +192,11 @@ var SignIn = React.createClass({
 });
 
 const url = new URL(window.location.href);
-const username = url.searchParams.get('username');
+const username = url.searchParams.get('username') || '';
 
 ReactDOM.render(
     <Layout>
-        <SignIn username={username}/>
+        <SignIn initialUsername={username}/>
     </Layout>,
     document.getElementById('app')
 );

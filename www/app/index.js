@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout } from './layout'
 
+const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
+
 const IndexStyles = {
     tableStyle: {
         marginTop: '20px',
@@ -23,6 +25,10 @@ const IndexStyles = {
 };
 
 var BooksTable = React.createClass({
+    cognitoUserPool: new AmazonCognitoIdentity.CognitoUserPool({
+        UserPoolId: USER_POOL_ID,
+        ClientId: USER_POOL_CLIENT_ID
+    }),
     libraryCardNumber: undefined,
     libraryPassword: undefined,
     userName: undefined,
@@ -55,14 +61,31 @@ var BooksTable = React.createClass({
         });
     },
     componentDidMount: function() {
-        const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-        if (!jwtToken) {
-            window.location = './signin.html';
+        if (this.props.username) {
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
+                Username: this.props.username,
+                Pool: this.cognitoUserPool
+            });
+            
+            const that = this;
+            cognitoUser.getSession(function(err, data) {
+                if (err) {
+                    console.error(JSON.stringify(err));
+                    that.redirectToSignin();
+                } else {
+                    const cognitoUserSession = data;
+                    const idToken = cognitoUserSession.getIdToken();
+                    that.startGetUser(idToken.jwtToken);
+                }
+            });
         } else {
-            this.startGetUser();
+            this.redirectToSignin();
         }
     },
-    startGetUser: function() {
+    redirectToSignin: function() {
+        window.location = './signin.html';
+    },
+    startGetUser: function(jwtToken) {
         const req = new XMLHttpRequest();
         const that = this;
         req.addEventListener('load', function() {
@@ -73,7 +96,7 @@ var BooksTable = React.createClass({
                 that.userName = response.userName;
                 that.startLoad(false);
             } else if (this.status == 401) {
-                window.location = './signin.html';
+                that.redirectToSignin();
             } else if (this.status == 404) {
                 window.location = './accountsetup.html';
             } else {
@@ -191,14 +214,14 @@ var BooksTable = React.createClass({
     }
 });
 
-const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+const username = document.cookie.replace(/(?:(?:^|.*;\s*)username\s*\=\s*([^;]*).*$)|^.*$/, "$1");
 
 const endpoint = FCPL_API_ENDPOINT;
 ReactDOM.render(
     <Layout>
         <div className="pure-u-1-6"></div>
         <div className="pure-u-2-3">
-            <BooksTable endpoint={endpoint} idToken={jwtToken}/>
+            <BooksTable endpoint={endpoint} username={username}/>
         </div>
         <div className="pure-u-1-6"></div>
     </Layout>,
