@@ -111,8 +111,8 @@ var SignUp = React.createClass({
     },
     
     renderConfirmationPart: function() {
-        const submitButtonDisabled = !!(this.state.verificationCode.length == 0);
         if (this.state.cognitoUser) {
+            const submitButtonDisabled = (this.state.verificationCode.length == 0);
             return(
                 <fieldset>
                     <label htmlFor="verificationCode">We sent a verification code to {this.state.email}.  Please enter it here:</label>
@@ -139,7 +139,7 @@ var SignUp = React.createClass({
                                      (this.state.password.length == 0) ||
                                      (this.state.email.length == 0) ||
                                      (this.state.warning.length > 0) ||
-                                     this.state.cognitoUser;
+                                     !!this.state.cognitoUser;
         return(
             <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
                 <div style={LayoutStyles.centerFormStyle}>
