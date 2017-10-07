@@ -20,6 +20,8 @@ var SignUp = React.createClass({
             passwordAgain: '',
             loading: false,
             warning: '',
+            cognitoUser: undefined,
+            verificationCode: '',
             lastError: undefined
         }
     },
@@ -54,6 +56,11 @@ var SignUp = React.createClass({
         }
         return '';
     },
+    onVerificationCodeChange: function(e) {
+        this.setState({
+            verificationCode: e.target.value
+        });
+    },
     
     onSignUpButtonClicked: function(e) {
         e.preventDefault();
@@ -76,14 +83,47 @@ var SignUp = React.createClass({
         
         const that = this;
         userPool.signUp(this.state.username, this.state.password, attributeList, null, function(err, result) {
-            if (!err && result && result.user) {
-                window.location = './signin.html?username=' + result.user.username;
-            }
+            that.setState({
+                loading: false,
+                cognitoUser: result ? result.user : undefined,
+                lastError: err ? err.message : undefined
+            });
+        });
+    },
+    
+    onVerificationCodeSubmitButtonClicked: function(e) {
+        e.preventDefault();
+        
+        this.setState({
+            loading: true
+        });
+        
+        const that = this;
+        this.state.cognitoUser.confirmRegistration(this.state.verificationCode, true, function(err, result) {
             that.setState({
                 loading: false,
                 lastError: err ? err.message : undefined
             });
+            if (result) {
+                window.location = './signin.html?username=' + that.state.cognitoUser.username;
+            }
         });
+    },
+    
+    renderConfirmationPart: function() {
+        const submitButtonDisabled = !!(this.state.verificationCode.length == 0);
+        if (this.state.cognitoUser) {
+            return(
+                <fieldset>
+                    <label htmlFor="verificationCode">We sent a verification code to {this.state.email}.  Please enter it here:</label>
+                    <input id="verificationCode" onChange={this.onVerificationCodeChange} placeholder="123456"/>
+                    <span className="pure-form-message">required</span>
+                    <SpinnerSubmitButton loading={this.state.loading}
+                                         disabled={submitButtonDisabled}
+                                         onClick={this.onVerificationCodeSubmitButtonClicked}/>
+                </fieldset>
+            );
+        } else return '';
     },
 
     render: function() {
@@ -98,7 +138,8 @@ var SignUp = React.createClass({
         const submitButtonDisabled = (this.state.username.length == 0) ||
                                      (this.state.password.length == 0) ||
                                      (this.state.email.length == 0) ||
-                                     (this.state.warning.length > 0);
+                                     (this.state.warning.length > 0) ||
+                                     this.state.cognitoUser;
         return(
             <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
                 <div style={LayoutStyles.centerFormStyle}>
@@ -126,11 +167,12 @@ var SignUp = React.createClass({
                             <span className="pure-form-message">required</span>
                         
                             <label style={LayoutStyles.warningTextStyle}>{this.state.warning}</label>
+                            <SpinnerSubmitButton loading={this.state.loading}
+                                                 disabled={submitButtonDisabled}
+                                                 submitButtonText='Sign up'
+                                                 onClick={this.onSignUpButtonClicked}/>
                         </fieldset>
-                        <SpinnerSubmitButton loading={this.state.loading}
-                                             disabled={submitButtonDisabled}
-                                             submitButtonText='Sign up'
-                                             onClick={this.onSignUpButtonClicked}/>
+                        {this.renderConfirmationPart()}
                     </form>
                 </div>
             </div>
