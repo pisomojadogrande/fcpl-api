@@ -25,10 +25,6 @@ const IndexStyles = {
 };
 
 var BooksTable = React.createClass({
-    cognitoUserPool: new AmazonCognitoIdentity.CognitoUserPool({
-        UserPoolId: USER_POOL_ID,
-        ClientId: USER_POOL_CLIENT_ID
-    }),
     libraryCardNumber: undefined,
     libraryPassword: undefined,
     userName: undefined,
@@ -48,25 +44,14 @@ var BooksTable = React.createClass({
     getInitialState: function() {
         return this.loadingState;
     },
-    getBooksResponseToBooks: function(response) {
-        return response.libraryItems.map((item) => {
-            const friendly = item.friendly.replace(/&nbsp;/g, '');
-            const dueDate = new Date(item.dueDate);
-            return {
-                key: item.renewId,
-                title: friendly, 
-                dueDate: dueDate.toDateString(),
-                timesRenewed: item.timesRenewed || 0
-            };
-        });
-    },
     componentDidMount: function() {
-        if (this.props.username) {
-            const cognitoUser = new AmazonCognitoIdentity.CognitoUser({
-                Username: this.props.username,
-                Pool: this.cognitoUserPool
-            });
-            
+        const cognitoUserPool = new AmazonCognitoIdentity.CognitoUserPool({
+            UserPoolId: USER_POOL_ID,
+            ClientId: USER_POOL_CLIENT_ID
+        });
+        const cognitoUser = cognitoUserPool.getCurrentUser();
+        console.log('Current user ' + JSON.stringify(cognitoUser));
+        if (cognitoUser) {
             const that = this;
             cognitoUser.getSession(function(err, data) {
                 if (err) {
@@ -74,6 +59,7 @@ var BooksTable = React.createClass({
                     that.redirectToSignin();
                 } else {
                     const cognitoUserSession = data;
+                    console.log('Current session ' + JSON.stringify(cognitoUserSession));
                     const idToken = cognitoUserSession.getIdToken();
                     that.startGetUser(idToken.jwtToken);
                 }
@@ -145,10 +131,24 @@ var BooksTable = React.createClass({
         req.open('GET', url);
         req.send();
     },
+    getBooksResponseToBooks: function(response) {
+        return response.libraryItems.map((item) => {
+            const friendly = item.friendly.replace(/&nbsp;/g, '');
+            const dueDate = new Date(item.dueDate);
+            return {
+                key: item.renewId,
+                title: friendly, 
+                dueDate: dueDate.toDateString(),
+                timesRenewed: item.timesRenewed || 0
+            };
+        });
+    },
+
     onRefreshClicked: function() {
         this.startLoad(true);
         this.setState(this.loadingState);
     },
+
     render: function() {
         var spinner = <i className="fa fa-refresh fa-spin fa-fw"></i>;
         var errorDisplay = this.state.lastError ? 'block' : 'none';
@@ -214,14 +214,12 @@ var BooksTable = React.createClass({
     }
 });
 
-const username = document.cookie.replace(/(?:(?:^|.*;\s*)username\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-
 const endpoint = FCPL_API_ENDPOINT;
 ReactDOM.render(
     <Layout>
         <div className="pure-u-1-6"></div>
         <div className="pure-u-2-3">
-            <BooksTable endpoint={endpoint} username={username}/>
+            <BooksTable endpoint={endpoint}/>
         </div>
         <div className="pure-u-1-6"></div>
     </Layout>,

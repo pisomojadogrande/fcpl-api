@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom'
 import { Layout, LayoutStyles } from './layout'
 import { SpinnerSubmitButton } from './controls'
 
+const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
+
 var AccountSetup = React.createClass({
     getInitialState: function() {
         return {
@@ -28,9 +30,30 @@ var AccountSetup = React.createClass({
     },
     onSubmitButtonClicked: function(e) {
         e.preventDefault();
-        this.startPutUser();
+        
+        const cognitoUserPool = new AmazonCognitoIdentity.CognitoUserPool({
+            UserPoolId: USER_POOL_ID,
+            ClientId: USER_POOL_CLIENT_ID
+        });
+        const cognitoUser = cognitoUserPool.getCurrentUser();
+        if (cognitoUser) {
+            const that = this;
+            cognitoUser.getSession(function(err, data) {
+                if (err) {
+                    that.redirectToSignin();
+                } else {
+                    const idToken = data.getIdToken();
+                    that.startPutUser(idToken.jwtToken);
+                }
+            });
+        } else {
+            this.redirectToSignin();
+        }
     },
-    startPutUser: function() {
+    redirectToSignin: function() {
+        window.location = './signin.html';
+    },
+    startPutUser: function(jwtToken) {
         this.setState({
             loading: true
         });
@@ -39,7 +62,7 @@ var AccountSetup = React.createClass({
         const that = this;
         req.addEventListener('load', function() {
             if (this.status == 200) {
-                window.location = './index.html?token=' + that.props.token;
+                window.location = './index.html';
             } else {
                 finishPutUserError('Error setting up account: ' + this.responseText);
             }
@@ -51,7 +74,7 @@ var AccountSetup = React.createClass({
                   '/user?libraryCardNumber=' + this.state.libraryCardNumber +
                   '&libraryPassword=' + this.state.libraryPassword;
         req.open('POST', url);
-        req.setRequestHeader('Authorization', this.props.token);
+        req.setRequestHeader('Authorization', jwtToken);
         req.send();
     },
     finishPutUserError: function(err) {
@@ -108,14 +131,9 @@ var AccountSetup = React.createClass({
 
 const endpoint = FCPL_API_ENDPOINT;
 
-const jwtToken = document.cookie.replace(/(?:(?:^|.*;\s*)idToken\s*\=\s*([^;]*).*$)|^.*$/, "$1");
-if (!jwtToken) {
-    window.location = './signin.html';
-}
-
 ReactDOM.render(
     <Layout>
-        <AccountSetup token={jwtToken} endpoint={endpoint}/>
+        <AccountSetup endpoint={endpoint}/>
     </Layout>,
     document.getElementById('app')
 );

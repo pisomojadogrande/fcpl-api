@@ -6,11 +6,6 @@ import { SpinnerSubmitButton } from './controls'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
-const jwt = require('jsonwebtoken');
-
-// Expire the JWT token cookie 10min earlier than the JWT actually expires
-const JWT_COOKIE_EXPIRATION_BUFFER_MSEC = 600 * 1000;
-
 var SignIn = React.createClass({
     
     userPoolId: USER_POOL_ID,
@@ -90,13 +85,7 @@ var SignIn = React.createClass({
         const that = this;
         this.cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: function(result) {
-                const cookieVal = "username=" + that.state.username;
-                document.cookie = cookieVal;
-                
-                // This will store a refresh token that will be valid for whatever
-                // the Cognito User Pool was configured (default 30d)
-                that.cognitoUser.cacheTokens();
-                
+                //that.cognitoUser.cacheTokens();
                 window.location = './index.html';
             },
             onFailure: function(err) {
