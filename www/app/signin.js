@@ -95,7 +95,6 @@ var SignIn = React.createClass({
         const that = this;
         this.cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: function(result) {
-                //that.cognitoUser.cacheTokens();
                 window.location = './index.html';
             },
             onFailure: function(err) {
@@ -191,7 +190,7 @@ var SignIn = React.createClass({
 });
 
 const url = new URL(window.location.href);
-const username = url.searchParams.get('username') || '';
+const username = (url.searchParams && url.searchParams.get('username')) || '';
 
 ReactDOM.render(
     <Layout>
