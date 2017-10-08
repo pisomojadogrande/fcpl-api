@@ -20,6 +20,16 @@ var SignIn = React.createClass({
         };
     },
     
+    componentDidMount: function() {
+        const cognitoUserPool = new AmazonCognitoIdentity.CognitoUserPool({
+            UserPoolId: USER_POOL_ID,
+            ClientId: USER_POOL_CLIENT_ID
+        });
+        const cognitoUser = cognitoUserPool.getCurrentUser();
+        if (cognitoUser) {
+            cognitoUser.signOut();
+        }
+    },
     getInitialState: function() {
         return {
             username: this.props.initialUsername,

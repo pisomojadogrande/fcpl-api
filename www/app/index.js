@@ -149,6 +149,17 @@ var BooksTable = React.createClass({
         this.setState(this.loadingState);
     },
 
+    renderUserIdentity: function() {
+        if (this.libraryCardNumber && this.userName) {
+            return(
+                <div>
+                    Logged in as {this.userName} ({this.libraryCardNumber}).  <a href="./signin.html">Sign out</a>
+                </div>
+            );
+        } else {
+            return '';
+        }
+    },
     render: function() {
         var spinner = <i className="fa fa-refresh fa-spin fa-fw"></i>;
         var errorDisplay = this.state.lastError ? 'block' : 'none';
@@ -159,14 +170,6 @@ var BooksTable = React.createClass({
             </button>
         );
         var headerCol0 = this.state.isLoading ? spinner : refreshButton;
-        var userIdentity = (<div></div>);
-        if (this.libraryCardNumber && this.userName) {
-            userIdentity = (
-                <div>
-                    Logged in as {this.userName} ({this.libraryCardNumber}).  <a href="./signin.html">Not you?</a>
-                </div>
-            );
-        }
         var tableRows = this.state.books.map((book) => {
             var col0;
             if (this.state.isLoading) {
@@ -194,7 +197,7 @@ var BooksTable = React.createClass({
                 <div style={IndexStyles.errorBarStyle} display={errorDisplay}>
                     <h3>{this.state.lastError}</h3>
                 </div>
-                {userIdentity}
+                {this.renderUserIdentity()}
                 <table className="pure-table" style={IndexStyles.tableStyle}>
                     <thead>
                         <tr>

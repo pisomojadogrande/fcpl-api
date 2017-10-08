@@ -5,8 +5,6 @@ import { SpinnerSubmitButton } from './controls'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
-import { JWT } from './jwt'
-
 var SignUp = React.createClass({
     
     userPoolId: USER_POOL_ID,
