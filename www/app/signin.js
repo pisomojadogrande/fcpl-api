@@ -132,11 +132,9 @@ var SignIn = React.createClass({
             this.signIn();
         }
     },
-    render: function() {
-        const submitButtonDisabled = (this.state.passwordWarning.length > 0);
-        var newPasswordFieldSet = '';
+    renderNewPasswordFields: function() {
         if (this.state.needsNewPassword) {
-            newPasswordFieldSet = (
+            return (
                 <fieldset>
                     <legend>Looks like it's your first time... welcome!  Set a new password here:</legend>
                     <label htmlFor="newPassword">Password</label>
@@ -148,7 +146,12 @@ var SignIn = React.createClass({
                     <label style={LayoutStyles.warningTextStyle}>{this.state.passwordWarning}</label>
                 </fieldset>
             );
+        } else {
+            return '';
         }
+    },
+    render: function() {
+        const submitButtonDisabled = (this.state.passwordWarning.length > 0);
         var errorBar = '';
         if (this.state.lastError) {
             errorBar = (
@@ -164,7 +167,7 @@ var SignIn = React.createClass({
                         <fieldset>
                             {errorBar}
                             <legend>
-                                <h3>Sign in</h3>
+                                <h3>Sign in <a href="./signup.html">(Sign up?)</a></h3>
                             </legend>
                             
                             <label htmlFor="username">Username</label>
@@ -177,7 +180,7 @@ var SignIn = React.createClass({
                             <a href="./passwordreset.html">Forgot password?</a>
                             
                         </fieldset>
-                        {newPasswordFieldSet}
+                        {this.renderNewPasswordFields()}
                         <SpinnerSubmitButton loading={this.state.isSigningIn}
                                              disabled={submitButtonDisabled}
                                              submitButtonText='Sign in'
