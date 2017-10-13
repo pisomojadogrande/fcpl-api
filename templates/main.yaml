@@ -342,6 +342,130 @@ Resources:
             FunctionName: !Ref PutUserFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user"
+    
+    AutoRenewerStateMachineRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - !Sub states.${AWS::Region}.amazonaws.com
+                      Action: "sts:AssumeRole"
+            Policies:
+                - PolicyName: GetBooksInvokeAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "lambda:InvokeFunction"
+                          Resource:
+                            - !GetAtt UserIteratorStateFunction.Arn
+                            - !GetAtt ProcessUserStateFunction.Arn
+    AutoRenewerStateMachine:
+        Type: "AWS::StepFunctions::StateMachine"
+        Properties:
+            RoleArn: !GetAtt AutoRenewerStateMachineRole.Arn
+            DefinitionString: !Sub |
+                {
+                    "Comment": "State machine for automatic renewals",
+                    "StartAt": "IteratorState",
+                    "States": {
+                        "IteratorState": {
+                            "Type": "Task",
+                            "Resource": "${UserIteratorStateFunction.Arn}",
+                            "Next": "DoneIteratingChoiceState"
+                        },
+                        "DoneIteratingChoiceState": {
+                            "Type": "Choice",
+                            "Choices": [
+                                {
+                                    "Variable": "$.continue",
+                                    "BooleanEquals": true,
+                                    "Next": "ProcessUserState"
+                                }
+                            ],
+                            "Default": "DoneSuccessState"
+                        },
+                        "ProcessUserState": {
+                            "Type": "Task",
+                            "Resource": "${ProcessUserStateFunction.Arn}",
+                            "Next": "IteratorState"
+                        },
+                        "DoneSuccessState": {
+                            "Type": "Succeed"
+                        }
+                    }
+                }
+    UserIteratorStateFunctionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    UserIteratorStateFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Runtime: nodejs6.10
+            Timeout: 5
+            Handler: index.handler
+            Role: !GetAtt UserIteratorStateFunctionRole.Arn
+            Code:
+                ZipFile: |
+                    const NUM_ITERATIONS = 5;
+                    exports.handler = (event, context, callback) => {
+                        console.log('event: ' + JSON.stringify(event));
+                        var index = event.index || 0;
+                        index++;
+                        const result = {
+                            index: index,
+                            userId: 'user' + index,
+                            continue: (index < NUM_ITERATIONS)
+                        };
+                        callback(null, result);
+                    };
+    ProcessUserStateFunctionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    ProcessUserStateFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Runtime: nodejs6.10
+            Timeout: 5
+            Handler: index.handler
+            Role: !GetAtt ProcessUserStateFunctionRole.Arn
+            Code:
+                ZipFile: |
+                    exports.handler = (event, context, callback) => {
+                        console.log('event: ' + JSON.stringify(event));
+                        var index = event.index;
+                        const result = {
+                            index: index,
+                            msg: 'Processed ' + event.userId
+                        };
+                        callback(null, result);
+                    };
+    
     AutoRenewerExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
