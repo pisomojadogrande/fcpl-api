@@ -383,8 +383,8 @@ Resources:
                             "Type": "Choice",
                             "Choices": [
                                 {
-                                    "Variable": "$.continue",
-                                    "BooleanEquals": true,
+                                    "Variable": "$.done",
+                                    "BooleanEquals": false,
                                     "Next": "ProcessUserState"
                                 }
                             ],
@@ -413,6 +413,15 @@ Resources:
                       Action: "sts:AssumeRole"
             ManagedPolicyArns:
                 - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                - PolicyName: DDBQueryPolicy
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:Scan"
+                          Resource: !GetAtt UserTable.Arn
     UserIteratorStateFunction:
         Type: "AWS::Lambda::Function"
         Properties:
@@ -421,19 +430,11 @@ Resources:
             Handler: index.handler
             Role: !GetAtt UserIteratorStateFunctionRole.Arn
             Code:
-                ZipFile: |
-                    const NUM_ITERATIONS = 5;
-                    exports.handler = (event, context, callback) => {
-                        console.log('event: ' + JSON.stringify(event));
-                        var index = event.index || 0;
-                        index++;
-                        const result = {
-                            index: index,
-                            userId: 'user' + index,
-                            continue: (index < NUM_ITERATIONS)
-                        };
-                        callback(null, result);
-                    };
+                S3Bucket: !Ref S3Bucket
+                S3Key: "functions/UserIteratorState/code.zip"
+            Environment:
+                Variables:
+                    UserTableName: !Ref UserTable
     ProcessUserStateFunctionRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -458,10 +459,10 @@ Resources:
                 ZipFile: |
                     exports.handler = (event, context, callback) => {
                         console.log('event: ' + JSON.stringify(event));
-                        var index = event.index;
+                        var identityId = event.identityId;
                         const result = {
-                            index: index,
-                            msg: 'Processed ' + event.userId
+                            identityId: identityId,
+                            msg: 'Processed ' + identityId
                         };
                         callback(null, result);
                     };
@@ -552,6 +553,8 @@ Outputs:
         Value: !Ref GetUserFunction 
     PutUserFunctionName:
         Value: !Ref PutUserFunction
+    UserIteratorStateFunctionName:
+        Value: !Ref UserIteratorStateFunction
     AutoRenewerFunctionName:
         Value: !Ref AutoRenewerFunction
         
