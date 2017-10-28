@@ -394,7 +394,7 @@ Resources:
                         "GetBooksState": {
                             "Type": "Task",
                             "Resource": "${GetBooksFunction.Arn}",
-                            "ResultPath": "$.body",
+                            "ResultPath": "$.getBooksResponse",
                             "Next": "ProcessUserState"
                         },
                         "ProcessUserState": {
