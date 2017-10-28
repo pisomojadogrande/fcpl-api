@@ -378,13 +378,14 @@ Resources:
                         "IteratorState": {
                             "Type": "Task",
                             "Resource": "${UserIteratorStateFunction.Arn}",
+                            "ResultPath": "$.currentUser",
                             "Next": "DoneIteratingChoiceState"
                         },
                         "DoneIteratingChoiceState": {
                             "Type": "Choice",
                             "Choices": [
                                 {
-                                    "Variable": "$.done",
+                                    "Variable": "$.currentUser.done",
                                     "BooleanEquals": false,
                                     "Next": "GetBooksState"
                                 }

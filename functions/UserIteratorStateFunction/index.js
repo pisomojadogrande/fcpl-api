@@ -6,7 +6,6 @@ const tableName = process.env.UserTableName;
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
-    const lastIdentityId = event.identityId || '';
     const scanParams = {
         TableName: tableName,
         Select: "SPECIFIC_ATTRIBUTES",
@@ -14,9 +13,9 @@ exports.handler = (event, context, callback) => {
         Limit: 1,
         ReturnConsumedCapacity: 'TOTAL'
     };
-    if (lastIdentityId) {
+    if (event.currentUser && event.currentUser.identityId) {
         scanParams.ExclusiveStartKey = {
-            IdentityId: { S: lastIdentityId }
+            IdentityId: { S: event.currentUser.identityId }
         };
     }
     console.log(JSON.stringify(scanParams));
@@ -26,17 +25,18 @@ exports.handler = (event, context, callback) => {
         else {
             console.log(JSON.stringify(data));
             
-            result = {
-                done: (data.Items.length == 0)
-            };
-            
             if (data.Items.length > 0) {
                 const item = data.Items[0];
-                result.identityId = item.IdentityId.S;
-                result.queryStringParameters = {
+                result = {
+                    done: false,
+                    identityId: item.IdentityId.S,
                     libraryCardNumber: item.LibraryCardNumber.S,
                     libraryPassword: item.LibraryPassword.S,
                     email: item.Email.S
+                };
+            } else {
+                result = {
+                    done: true
                 };
             }
             

@@ -326,16 +326,24 @@ exports.handler = (event, context, callback) => {
     
     var forceRefresh = false;
     const ctx = {
+        // TODO: deprecate this
         libraryCardNumber: process.env.FCPLAccountId,
         libraryPassword: process.env.FCPLPassword,
     };
     if (event.queryStringParameters) {
+        // Coming through REST API, querying about a specific user
         forceRefresh = event.queryStringParameters.forceRefresh;
         if (event.queryStringParameters.libraryCardNumber) {
             ctx.libraryCardNumber = event.queryStringParameters.libraryCardNumber;
             ctx.libraryPassword = event.queryStringParameters.libraryPassword;
             console.log(`Using non-default account ${ctx.libraryCardNumber}`);
         }
+    } else if (event.currentUser) {
+        // Coming through the auto-renewer state machine
+        forceRefresh = true;
+        ctx.libraryCardNumber = event.currentUser.libraryCardNumber;
+        ctx.libraryPassword = event.currentUser.libraryPassword;
+        console.log(`State machine: current user ${ctx.libraryCardNumber}`);
     }
     ctx.cachePrefix = 'cache/' + ctx.libraryCardNumber;
       
