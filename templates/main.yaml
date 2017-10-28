@@ -394,12 +394,13 @@ Resources:
                         "GetBooksState": {
                             "Type": "Task",
                             "Resource": "${GetBooksFunction.Arn}",
-                            "ResultPath": "$.queryStringParameters",
+                            "ResultPath": "$.body",
                             "Next": "ProcessUserState"
                         },
                         "ProcessUserState": {
                             "Type": "Task",
                             "Resource": "${ProcessUserStateFunction.Arn}",
+                            "ResultPath": "$.msg",
                             "Next": "IteratorState"
                         },
                         "DoneSuccessState": {
@@ -466,9 +467,7 @@ Resources:
                 ZipFile: |
                     exports.handler = (event, context, callback) => {
                         console.log('event: ' + JSON.stringify(event));
-                        var identityId = event.identityId;
                         const result = {
-                            identityId: identityId,
                             msg: JSON.stringify(event)
                         };
                         callback(null, result);
