@@ -33,8 +33,11 @@ exports.handler = (event, context, callback) => {
             if (data.Items.length > 0) {
                 const item = data.Items[0];
                 result.identityId = item.IdentityId.S;
-                result.email = item.Email.S;
-                result.libraryCardNumber = item.LibraryCardNumber.S;
+                result.queryStringParameters = {
+                    libraryCardNumber: item.LibraryCardNumber.S,
+                    libraryPassword: item.LibraryPassword.S,
+                    email: item.Email.S
+                };
             }
             
             callback(null, result);

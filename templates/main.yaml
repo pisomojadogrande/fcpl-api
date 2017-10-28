@@ -364,6 +364,7 @@ Resources:
                             - "lambda:InvokeFunction"
                           Resource:
                             - !GetAtt UserIteratorStateFunction.Arn
+                            - !GetAtt GetBooksFunction.Arn
                             - !GetAtt ProcessUserStateFunction.Arn
     AutoRenewerStateMachine:
         Type: "AWS::StepFunctions::StateMachine"
@@ -385,10 +386,16 @@ Resources:
                                 {
                                     "Variable": "$.done",
                                     "BooleanEquals": false,
-                                    "Next": "ProcessUserState"
+                                    "Next": "GetBooksState"
                                 }
                             ],
                             "Default": "DoneSuccessState"
+                        },
+                        "GetBooksState": {
+                            "Type": "Task",
+                            "Resource": "${GetBooksFunction.Arn}",
+                            "ResultPath": "$.queryStringParameters",
+                            "Next": "ProcessUserState"
                         },
                         "ProcessUserState": {
                             "Type": "Task",
@@ -462,7 +469,7 @@ Resources:
                         var identityId = event.identityId;
                         const result = {
                             identityId: identityId,
-                            msg: 'Processed ' + identityId
+                            msg: JSON.stringify(event)
                         };
                         callback(null, result);
                     };
