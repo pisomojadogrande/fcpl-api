@@ -302,7 +302,7 @@ function parseHtmlPromise(ctx) {
     });
 }
 
-function completeCallback(callback, error, data) {
+function completeCallbackRestApi(callback, error, data) {
     const result = {
         headers: ACAO_HEADERS
     };
@@ -317,14 +317,34 @@ function completeCallback(callback, error, data) {
         result.statusCode = 200;
         result.body = JSON.stringify(data);
     }
-    console.log(`Result: ${JSON.stringify(result)}`);
-    callback(null, result);
+    console.log(`REST API result: ${JSON.stringify(result)}`);
+    callback(null, result);    
+}
+
+function completeCallbackAsTask(callback, error, data) {
+    if (error) {
+        console.error(`Completing task with error ${JSON.stringify(err)}`);
+        callback(error);
+    } else {
+        callback(null, data);
+    }
+}
+
+function completeCallback(callback, error, data, resultOptions) {
+    if (resultOptions.invokedAsRestApi) {
+        completeCallbackRestApi(callback, error, data);
+    } else {
+        completeCallbackAsTask(callback, error, data);
+    }
 }
 
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
     var forceRefresh = false;
+    const resultOptions = {
+        invokedAsRestApi: true
+    };
     const ctx = {
         // TODO: deprecate this
         libraryCardNumber: process.env.FCPLAccountId,
@@ -341,6 +361,7 @@ exports.handler = (event, context, callback) => {
     } else if (event.currentUser) {
         // Coming through the auto-renewer state machine
         forceRefresh = true;
+        resultOptions.invokedAsRestApi = false;
         ctx.libraryCardNumber = event.currentUser.libraryCardNumber;
         ctx.libraryPassword = event.currentUser.libraryPassword;
         console.log(`State machine: current user ${ctx.libraryCardNumber}`);
@@ -361,9 +382,9 @@ exports.handler = (event, context, callback) => {
         if (forceRefresh) {
             result.renewAction = ctx.renewAction;
         }
-        completeCallback(callback, null, result);
+        completeCallback(callback, null, result, resultOptions);
     }).catch((e) => {
-        completeCallback(callback, e);
+        completeCallback(callback, e, null, resultOptions);
     });
  
 };
