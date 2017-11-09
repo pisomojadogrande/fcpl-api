@@ -365,7 +365,7 @@ Resources:
                           Resource:
                             - !GetAtt UserIteratorStateFunction.Arn
                             - !GetAtt GetBooksFunction.Arn
-                            - !GetAtt ProcessUserStateFunction.Arn
+                            - !GetAtt AutoRenewerFunction.Arn
     AutoRenewerStateMachine:
         Type: "AWS::StepFunctions::StateMachine"
         Properties:
@@ -396,11 +396,11 @@ Resources:
                             "Type": "Task",
                             "Resource": "${GetBooksFunction.Arn}",
                             "ResultPath": "$.getBooksResponse",
-                            "Next": "ProcessUserState"
+                            "Next": "AutoRenewerState"
                         },
-                        "ProcessUserState": {
+                        "AutoRenewerState": { 
                             "Type": "Task",
-                            "Resource": "${ProcessUserStateFunction.Arn}",
+                            "Resource": "${AutoRenewerFunction.Arn}",
                             "ResultPath": "$.msg",
                             "Next": "IteratorState"
                         },
@@ -444,36 +444,6 @@ Resources:
             Environment:
                 Variables:
                     UserTableName: !Ref UserTable
-    ProcessUserStateFunctionRole:
-        Type: "AWS::IAM::Role"
-        Properties:
-            AssumeRolePolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    - Effect: Allow
-                      Principal:
-                        Service:
-                            - lambda.amazonaws.com
-                      Action: "sts:AssumeRole"
-            ManagedPolicyArns:
-                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-    ProcessUserStateFunction:
-        Type: "AWS::Lambda::Function"
-        Properties:
-            Runtime: nodejs6.10
-            Timeout: 5
-            Handler: index.handler
-            Role: !GetAtt ProcessUserStateFunctionRole.Arn
-            Code:
-                ZipFile: |
-                    exports.handler = (event, context, callback) => {
-                        console.log('event: ' + JSON.stringify(event));
-                        const result = {
-                            msg: JSON.stringify(event)
-                        };
-                        callback(null, result);
-                    };
-    
     AutoRenewerExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:

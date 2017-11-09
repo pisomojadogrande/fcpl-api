@@ -34,6 +34,19 @@ function invokeGetBooksPromise() {
     });
 }
 
+function isStepFunctionTask(event) {
+    return event.getBooksResponse;
+}
+
+function getBooksPromise(event) {
+    if (isStepFunctionTask(event)) {
+        console.log(`Invoked as step function task: ${JSON.stringify(event.getBooksResponse)}`);
+        return Promise.resolve(event.getBooksResponse);
+    } else {
+        return invokeGetBooksPromise();
+    }
+}
+
 function expiresSoon(book) {
     const deadline = new Date();
     deadline.setHours(deadline.getHours() + (TOLERANCE_DAYS * 24));
@@ -162,7 +175,13 @@ function parseRenewResponsePromise(renewResponse) {
 }
 
 function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
-    if (books.length == 0) return Promise.resolve([]);
+    if (books.length == 0) {
+        console.log(`No books; skipping renewal attempt`);
+        return Promise.resolve([]);
+    }
+    if (!renewAction) 
+        return Promise.reject(`Missing renewAction`);
+    }
     
     const retryOnFail = (retriesRemaining > 0);
     return new Promise((resolve, reject) => {
@@ -218,7 +237,7 @@ exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
 
     var booksToRenew = [];
-    invokeGetBooksPromise().then((response) => {
+    getBooksPromise(event).then((response) => {
         console.log(`Renew action ${response.renewAction}`);
         booksToRenew = response.libraryItems.filter((book) => {
             return expiresSoon(book);
@@ -229,10 +248,20 @@ exports.handler = (event, context, callback) => {
         return renewBooksPromiseWithRetries(booksToRenew, response.renewAction, RENEW_RETRIES);
     }).then((result) => {
         console.log(JSON.stringify(result));
-        return snsPublishPromise(result);
+        if (isStepFunctionTask(event)) {
+            // No SNS notification in case of Step function
+            return Promise.resolve(result);
+        } else {
+            return snsPublishPromise(result);
+        }
     }).then((result) => {
-        console.log(`Done; invalidating GetBooks cache`);
-        return invokeGetBooksPromise();
+        if (result && (result.length > 0)) {
+            console.log(`Done; invalidating GetBooks cache`);
+            return invokeGetBooksPromise();
+        } else {
+            console.log(`Done; no books renewed`);
+            return Promise.resolve(result);
+        }
     }).then((result) => {
         callback(null, result);
     }).catch((e) => {

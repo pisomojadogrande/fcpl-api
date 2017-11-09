@@ -326,6 +326,7 @@ function completeCallbackAsTask(callback, error, data) {
         console.error(`Completing task with error ${JSON.stringify(err)}`);
         callback(error);
     } else {
+        console.log(`Completing task with result ${JSON.stringify(data)}`);
         callback(null, data);
     }
 }
