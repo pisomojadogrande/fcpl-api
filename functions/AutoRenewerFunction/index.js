@@ -179,7 +179,7 @@ function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
         console.log(`No books; skipping renewal attempt`);
         return Promise.resolve([]);
     }
-    if (!renewAction) 
+    if (!renewAction) {
         return Promise.reject(`Missing renewAction`);
     }
     
@@ -233,6 +233,16 @@ function snsPublishPromise(books) {
     })
 }
 
+function refreshGetBooksCachePromise(passThroughResult) {
+    // Call GetBooks with forceRefresh=true, but ignore success/failure
+    return invokeGetBooksPromise().then(() => {
+        return Promise.resolve(passThroughResult);
+    }).catch((e) => {
+        console.warn(`Could not refresh the cache (${e}) but proceeding anyways`);
+        return Promise.resolve(passThroughResult);
+    });
+}
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
 
@@ -256,14 +266,17 @@ exports.handler = (event, context, callback) => {
         }
     }).then((result) => {
         if (result && (result.length > 0)) {
-            console.log(`Done; invalidating GetBooks cache`);
-            return invokeGetBooksPromise();
+            console.log(`Done; refreshing GetBooks cache`);
+            return refreshGetBooksCachePromise(result);
         } else {
             console.log(`Done; no books renewed`);
             return Promise.resolve(result);
         }
     }).then((result) => {
-        callback(null, result);
+        const output = {
+            items: result
+        };
+        callback(null, output);
     }).catch((e) => {
         callback(e);
     });
