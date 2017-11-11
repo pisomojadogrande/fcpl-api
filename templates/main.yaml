@@ -499,22 +499,6 @@ Resources:
             Role: !GetAtt AutoRenewerExecutionRole.Arn
             Runtime: nodejs6.10
             Timeout: 120
-    AutoRenewerRulePermission:
-        Type: "AWS::Lambda::Permission"
-        Properties:
-            Action: "lambda:InvokeFunction"
-            FunctionName: !Ref AutoRenewerFunction
-            Principal: "events.amazonaws.com"
-            SourceArn: !GetAtt BackgroundRenewRule.Arn
-    BackgroundRenewRule:
-        Type: "AWS::Events::Rule"
-        Properties:
-            Description: !Sub "Renews books close to expiration every ${BackgroundRenewIntervalHours} hours"
-            ScheduleExpression: !Sub "rate(${BackgroundRenewIntervalHours} hours)"
-            State: ENABLED
-            Targets:
-                - Arn: !GetAtt AutoRenewerFunction.Arn
-                  Id: RenewerFunctionScheduleTarget
     RenewalNotificationTopic:
         Type: "AWS::SNS::Topic"
         Properties:
@@ -559,6 +543,37 @@ Resources:
             Role: !GetAtt EmailNotifyExecutionRole.Arn
             Runtime: nodejs6.10
             Timeout: 30
+    AutoRenewerStateMachineScheduleRuleRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - events.amazonaws.com
+                      Action: "sts:AssumeRole"
+            Policies:
+                - PolicyName: StateMachineStartExecution
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "states:StartExecution"
+                          Resource:
+                            - !Ref AutoRenewerStateMachine
+    AutoRenewerStateMachineScheduleRule:
+        Type: "AWS::Events::Rule"
+        Properties:
+            Description: !Sub "Renews books for all users that are close to expiration every ${BackgroundRenewIntervalHours} hours"
+            ScheduleExpression: !Sub "rate(${BackgroundRenewIntervalHours} hours)"
+            State: ENABLED
+            Targets:
+                - Arn: !Ref AutoRenewerStateMachine
+                  Id: AutoRenewerStateMachineScheduleTarget
+                  RoleArn: !GetAtt AutoRenewerStateMachineScheduleRuleRole.Arn
 Outputs:
     UserPoolProviderName:
         Value: !GetAtt UserPool.ProviderName
