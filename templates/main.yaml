@@ -1,12 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: FCPL account access
 Parameters:
-    FCPLAccountId:
+    FCPLHostname:
         Type: String
-        AllowedPattern: "^[0-9]+$"
-    FCPLPassword:
-        Type: String
-        NoEcho: true
+        Default: "fcplcat.fairfaxcounty.gov"
     S3Bucket:
         Type: String
     MaxCacheAgeHours:
@@ -236,8 +233,7 @@ Resources:
                 S3Key: "functions/GetBooks/code.zip"
             Environment:
                 Variables:
-                    FCPLAccountId: !Ref FCPLAccountId
-                    FCPLPassword: !Ref FCPLPassword
+                    FCPLHostname: !Ref FCPLHostname
                     S3Bucket: !Ref S3Bucket
                     CachePrefix: "cache/TEST"
                     MaxCacheAgeHours: !Ref MaxCacheAgeHours
@@ -481,7 +477,7 @@ Resources:
                 S3Key: "functions/AutoRenewer/code.zip"
             Environment:
                 Variables:
-                    FCPLAccountId: !Ref FCPLAccountId
+                    FCPLHostname: !Ref FCPLHostname
                     GetBooksFunctionName: !Ref GetBooksFunction
             Handler: index.handler
             Role: !GetAtt AutoRenewerExecutionRole.Arn

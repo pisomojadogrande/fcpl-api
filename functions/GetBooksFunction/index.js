@@ -9,7 +9,7 @@ const s3 = new AWS.S3();
 const S3_BUCKET = process.env.S3Bucket;
 const MAX_CACHED_AGE_SECS = 3600 * process.env.MaxCacheAgeHours;
 
-const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
+const FCPL_HOSTNAME = process.env.FCPLHostname;
 
 const ERROR_INVALID_LOGIN = 'Invalid login';
 
@@ -346,19 +346,13 @@ exports.handler = (event, context, callback) => {
     const resultOptions = {
         invokedAsRestApi: true
     };
-    const ctx = {
-        // TODO: deprecate this
-        libraryCardNumber: process.env.FCPLAccountId,
-        libraryPassword: process.env.FCPLPassword,
-    };
+    const ctx = {};
     if (event.queryStringParameters) {
         // Coming through REST API, querying about a specific user
         forceRefresh = event.queryStringParameters.forceRefresh;
-        if (event.queryStringParameters.libraryCardNumber) {
-            ctx.libraryCardNumber = event.queryStringParameters.libraryCardNumber;
-            ctx.libraryPassword = event.queryStringParameters.libraryPassword;
-            console.log(`Using non-default account ${ctx.libraryCardNumber}`);
-        }
+        ctx.libraryCardNumber = event.queryStringParameters.libraryCardNumber;
+        ctx.libraryPassword = event.queryStringParameters.libraryPassword;
+        console.log(`Using account from queryString ${ctx.libraryCardNumber}`);
     } else if (event.currentUser) {
         // Coming through the auto-renewer state machine
         forceRefresh = true;

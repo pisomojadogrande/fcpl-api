@@ -7,14 +7,16 @@ const lambda = new AWS.Lambda();
 const sns = new AWS.SNS();
 
 const TOLERANCE_DAYS = 2;
-const FCPL_HOSTNAME = 'fcplcat.fairfaxcounty.gov';
+const FCPL_HOSTNAME = process.env.FCPLHostname;
 const RENEW_RETRIES = 2;
 
-function invokeGetBooksPromise() {
+function invokeGetBooksPromise(currentUser) {
     return new Promise((resolve, reject) => {
         const functionInput = {
             queryStringParameters: {
-                forceRefresh: true
+                forceRefresh: true,
+                libraryCardNumber: currentUser.libraryCardNumber,
+                libraryPassword: currentUser.libraryPassword
             }
         };
         const params = {
@@ -34,19 +36,6 @@ function invokeGetBooksPromise() {
     });
 }
 
-function isStepFunctionTask(event) {
-    return event.getBooksResponse;
-}
-
-function getBooksPromise(event) {
-    if (isStepFunctionTask(event)) {
-        console.log(`Invoked as step function task: ${JSON.stringify(event.getBooksResponse)}`);
-        return Promise.resolve(event.getBooksResponse);
-    } else {
-        return invokeGetBooksPromise();
-    }
-}
-
 function expiresSoon(book) {
     const deadline = new Date();
     deadline.setHours(deadline.getHours() + (TOLERANCE_DAYS * 24));
@@ -55,13 +44,13 @@ function expiresSoon(book) {
     return (dueDate < deadline);
 }
 
-function postRenewPromise(books, renewAction) {
+function postRenewPromise(currentUser, books, renewAction) {
     if (books.length == 0) return Promise.resolve();
     
     return new Promise((resolve, reject) => {
         
         const postDataParams = {
-            user_id: process.env.FCPLAccountId,
+            user_id: currentUser.libraryCardNumber,
             selection_type: 'selected'
         };
         books.forEach((book) => {
@@ -174,7 +163,7 @@ function parseRenewResponsePromise(renewResponse) {
     });
 }
 
-function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
+function renewBooksPromiseWithRetries(currentUser, books, renewAction, retriesRemaining) {
     if (books.length == 0) {
         console.log(`No books; skipping renewal attempt`);
         return Promise.resolve([]);
@@ -185,7 +174,7 @@ function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
     
     const retryOnFail = (retriesRemaining > 0);
     return new Promise((resolve, reject) => {
-        postRenewPromise(books, renewAction).then((renewBooksResponse) => {
+        postRenewPromise(currentUser, books, renewAction).then((renewBooksResponse) => {
             return parseRenewResponsePromise(renewBooksResponse);
         }).then((renewalResult) => {
             resolve(renewalResult);
@@ -194,7 +183,7 @@ function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
             console.error(`Failed to renew, retry=${retryOnFail}: ${err}`);
             if (retryOnFail) {
                 // Better way to do a recursive Promise??
-                renewBooksPromiseWithRetries(books, renewAction, retriesRemaining).then((result) => {
+                renewBooksPromiseWithRetries(currentUser, books, renewAction, retriesRemaining).then((result) => {
                     resolve(result);
                 }).catch((err) => {
                     reject(err);
@@ -206,9 +195,9 @@ function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
     });
 }
 
-function refreshGetBooksCachePromise(passThroughResult) {
+function refreshGetBooksCachePromise(currentUser, passThroughResult) {
     // Call GetBooks with forceRefresh=true, but ignore success/failure
-    return invokeGetBooksPromise().then(() => {
+    return invokeGetBooksPromise(currentUser).then(() => {
         return Promise.resolve(passThroughResult);
     }).catch((e) => {
         console.warn(`Could not refresh the cache (${e}) but proceeding anyways`);
@@ -218,21 +207,20 @@ function refreshGetBooksCachePromise(passThroughResult) {
 
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
+    const getBooksResponse = event.getBooksResponse;
+    const renewAction = getBooksResponse.renewAction;
+    const currentUser = event.currentUser;
 
-    var booksToRenew = [];
-    getBooksPromise(event).then((response) => {
-        console.log(`Renew action ${response.renewAction}`);
-        booksToRenew = response.libraryItems.filter((book) => {
-            return expiresSoon(book);
-        });
-        const titlesExpiringSoon = booksToRenew.map((book) => book.friendly);
-        console.log(`Expiring soon: ${JSON.stringify(titlesExpiringSoon)}`);
-        
-        return renewBooksPromiseWithRetries(booksToRenew, response.renewAction, RENEW_RETRIES);
-    }).then((result) => {
+    var booksToRenew = getBooksResponse.libraryItems.filter((book) => {
+        return expiresSoon(book);
+    });
+    const titlesExpiringSoon = booksToRenew.map((book) => book.friendly);
+    console.log(`Expiring soon: ${JSON.stringify(titlesExpiringSoon)}`);
+    
+    renewBooksPromiseWithRetries(currentUser, booksToRenew, renewAction, RENEW_RETRIES).then((result) => {
         if (result && (result.length > 0)) {
             console.log(`Done; refreshing GetBooks cache`);
-            return refreshGetBooksCachePromise(result);
+            return refreshGetBooksCachePromise(currentUser, result);
         } else {
             console.log(`Done; no books renewed`);
             return Promise.resolve(result);
