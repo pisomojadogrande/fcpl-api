@@ -206,33 +206,6 @@ function renewBooksPromiseWithRetries(books, renewAction, retriesRemaining) {
     });
 }
 
-function snsPublishPromise(books) {
-    return new Promise((resolve, reject) => {
-        const successfulRenewals = [];
-        const unsuccessfulRenewals = [];
-        books.forEach((book) => {
-            if (book.success) {
-                successfulRenewals.push(book);
-            } else {
-                unsuccessfulRenewals.push(book);
-            }
-        });
-        message = `Attempted ${books.length} renewals.\nSuccessful renewals:\n${JSON.stringify(successfulRenewals, null, 2)}\nUnsuccessful renewals:\n${JSON.stringify(unsuccessfulRenewals, null, 2)}`;
-        console.log(`Publishing message to topic ${process.env.SNSTopicArn}`);
-        console.log(`Message: ${message}`);
-        
-        const params = {
-            TopicArn: process.env.SNSTopicArn,
-            Subject: `Renewal status for ${(new Date()).toString()}`,
-            Message: message
-        };
-        sns.publish(params, (err, data) => {
-            if (err) reject(err);
-            else resolve(books);
-        });
-    })
-}
-
 function refreshGetBooksCachePromise(passThroughResult) {
     // Call GetBooks with forceRefresh=true, but ignore success/failure
     return invokeGetBooksPromise().then(() => {
@@ -256,14 +229,6 @@ exports.handler = (event, context, callback) => {
         console.log(`Expiring soon: ${JSON.stringify(titlesExpiringSoon)}`);
         
         return renewBooksPromiseWithRetries(booksToRenew, response.renewAction, RENEW_RETRIES);
-    }).then((result) => {
-        console.log(JSON.stringify(result));
-        if (isStepFunctionTask(event)) {
-            // No SNS notification in case of Step function
-            return Promise.resolve(result);
-        } else {
-            return snsPublishPromise(result);
-        }
     }).then((result) => {
         if (result && (result.length > 0)) {
             console.log(`Done; refreshing GetBooks cache`);
