@@ -4,7 +4,7 @@ function InvokeFunction(
 )
 {
     $tempFile = [System.IO.Path]::GetTempFileName()
-    $payloadJson = (ConvertTo-Json $payload -Compress) -replace '"', '\"'
+    $payloadJson = (ConvertTo-Json $payload -Compress -Depth 10) -replace '"', '\"'
     echo "Payload: $payloadJson"
     $invokeResult = aws lambda invoke --function-name $functionName --invocation-type RequestResponse --payload $payloadJson --log-type Tail $tempFile | ConvertFrom-Json
     echo "Status: $invokeResult.StatusCode"
