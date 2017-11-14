@@ -42,9 +42,9 @@ var LastUpdated = React.createClass({
         if (this.props.lastModifiedDate) {
             const lastUpdated = 'Last updated: ' + this.props.lastModifiedDate.toLocaleString();
             return (
-                <div style={{overflow: 'hidden'}}>
+                <div style={{position: 'relative'}}>
                     <a>{lastUpdated}</a>
-                    <button style={{margin: '5px', float: 'right'}}
+                    <button style={{position: 'absolute', right: '0px', bottom: '0px'}}
                             className="pure-button"
                             onClick={this.props.onRefreshClicked}>
                         <i className="fa fa-refresh" style={IndexStyles.inlineIconStyle}></i>
