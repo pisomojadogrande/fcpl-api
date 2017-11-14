@@ -1,0 +1,12 @@
+.greenBackground {
+    background-color: green
+}
+
+.errorBar {
+    background-color: #c90014;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+    overflow: hidden;
+    text-align: center;
+}

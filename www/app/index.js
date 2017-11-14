@@ -3,11 +3,13 @@ import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
 import { Layout } from './layout'
 
+import styles from './styles.css'
+
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
 const IndexStyles = {
     tableStyle: {
-        marginTop: '20px',
+        marginTop: '5px',
         marginBottom: '5px',
         marginLeft: 'auto',
         marginRight: 'auto',
@@ -15,13 +17,6 @@ const IndexStyles = {
     },
     inlineIconStyle: {
         paddingRight: '3px'
-    },
-    errorBarStyle: {
-        backgroundColor: '#c90014',
-        color: 'white',
-        width: '100%',
-        paddingLeft: '5px',
-        marginTop: '10px',
     }
 };
 
@@ -31,7 +26,7 @@ var ErrorBar = React.createClass({
     },
     render: function() {
         return(
-            <div style={IndexStyles.errorBarStyle}>
+            <div className={styles.errorBar}>
                 <h3>{this.props.lastError}</h3>
             </div>
         );
@@ -47,9 +42,9 @@ var LastUpdated = React.createClass({
         if (this.props.lastModifiedDate) {
             const lastUpdated = 'Last updated: ' + this.props.lastModifiedDate.toLocaleString();
             return (
-                <div>
-                    {lastUpdated}
-                    <button style={{marginBottom: '5px', marginLeft: '5px'  }}
+                <div style={{overflow: 'hidden'}}>
+                    <a>{lastUpdated}</a>
+                    <button style={{margin: '5px', float: 'right'}}
                             className="pure-button"
                             onClick={this.props.onRefreshClicked}>
                         <i className="fa fa-refresh" style={IndexStyles.inlineIconStyle}></i>
@@ -67,7 +62,7 @@ var Spinner = React.createClass({
     render: function() {
         return(
             <div>
-                <i className="fa fa-refresh fa-spin fa-fw"></i>
+                <i className="fa fa-refresh fa-spin fa-fw fa-2x" style={{float: 'right'}}></i>
             </div>
         );
     }
@@ -242,7 +237,7 @@ var BooksTable = React.createClass({
                 <div>
                     {this.renderUserIdentity()}
                 </div>
-                <div style={{float: 'right'}}>
+                <div>
                     <StatusHeader isLoading={this.state.isLoading}
                                   lastError={this.state.lastError}
                                   lastModifiedDate={this.state.lastModifiedDate}

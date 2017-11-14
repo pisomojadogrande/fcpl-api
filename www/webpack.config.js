@@ -13,7 +13,8 @@ module.exports = {
     layout: './app/layout.js',
     passwordreset: './app/passwordreset.js',
     signin: './app/signin.js',
-    signup: './app/signup.js'
+    signup: './app/signup.js',
+    styles: './app/styles.css'
   },
   output: {
     path: __dirname + '/dist',
@@ -21,6 +22,10 @@ module.exports = {
   },
   module: {
     loaders: [
+      {
+          test: /\.css$/, 
+          loader: 'style-loader!css-loader?modules=true&localIdentName=[name]__[local]___[hash:base64:5]'
+      },
       {
         test: /\.jsx?$/,
         loader: "babel-loader",
@@ -44,7 +49,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['layout', 'index'],
+      chunks: ['styles', 'layout', 'index'],
       template: __dirname + '/app/index.html',
       filename: 'index.html'
     }),
