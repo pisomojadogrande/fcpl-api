@@ -28,7 +28,7 @@ const UserAccountMenu = React.createClass({
             const options = [
                 { friendly: 'Your account', dest: '#' },
                 { friendly: 'Activity log', dest: '#' },
-                { friendly: 'Sign out', dest: '#' }
+                { friendly: 'Sign out', dest: './signin.html' }
             ];
             const menuItems = options.map((opt) => {
                 return(

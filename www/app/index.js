@@ -29,8 +29,8 @@ var LastUpdated = React.createClass({
         if (this.props.lastModifiedDate) {
             const lastUpdated = 'Last updated: ' + this.props.lastModifiedDate.toLocaleString();
             return (
-                <div style={{position: 'relative'}}>
-                    <a>{lastUpdated}</a>
+                <div style={{position: 'relative', height: '36px'}}>
+                    <a style={{position: 'absolute', bottom: '0px'}}>{lastUpdated}</a>
                     <button style={{position: 'absolute', right: '0px', bottom: '0px'}}
                             className="pure-button"
                             onClick={this.props.onRefreshClicked}>
@@ -197,17 +197,6 @@ var BooksTable = React.createClass({
         this.setState(this.loadingState);
     },
 
-    renderUserIdentity: function() {
-        if (this.libraryCardNumber && this.userName) {
-            return(
-                <div>
-                    Logged in as {this.userName} ({this.libraryCardNumber}).  <a href="./signin.html">Sign out</a>
-                </div>
-            );
-        } else {
-            return '';
-        }
-    },
     render: function() {
         var tableRows = this.state.books.map((book) => {
             return(
@@ -221,9 +210,7 @@ var BooksTable = React.createClass({
         
         return(
             <div>
-                <div>
-                    {this.renderUserIdentity()}
-                </div>
+                <div style={{height: '10px'}}/>
                 <div>
                     <StatusHeader isLoading={this.state.isLoading}
                                   lastError={this.state.lastError}
