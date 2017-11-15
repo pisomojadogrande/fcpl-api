@@ -2,10 +2,18 @@
     position: absolute;
     right: 0px;
     top: 0px;
+    width: 200px;
     margin: 10px;
     padding: 5px;
-    background-color: midnightblue;
+    text-align: left;
+}
+
+.accountMenuButton {
+    font-size: 85%;
+    background: midnightblue;
     color: lawngreen;
+    width: 100%;
+    text-align: left;
 }
 
 .centerForm {

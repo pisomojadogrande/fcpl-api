@@ -231,7 +231,7 @@ var BooksTable = React.createClass({
                                   onRefreshClicked={this.onRefreshClicked}/>
                 </div>
                 <div style={{height: '10px'}}/>
-                <table className="pure-table pure-table-horizontal">
+                <table className="pure-table pure-table-horizontal" style={{width: '100%'}}>
                     <thead>
                         <tr>
                             <th>Book title</th>
