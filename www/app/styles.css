@@ -14,6 +14,22 @@
     color: lawngreen;
     width: 100%;
     text-align: left;
+    border-radius: 0px;
+}
+
+.accountMenuLink {
+    background: midnightblue;
+    color: yellow;
+}
+
+.accountMenuLink:hover {
+    background: lawngreen;
+    color: midnightblue;
+}
+
+.accountMenuList {
+    border-style: solid;
+    border-color: midnightblue;
 }
 
 .centerForm {

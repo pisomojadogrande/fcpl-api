@@ -22,6 +22,29 @@ const UserAccountMenu = React.createClass({
         });
     },
     render: function() {
+        var menuList = '';
+        if (this.state.showMenu) {
+            const linkClass = ["pure-menu-link", styles.accountMenuLink].join(' ');
+            const options = [
+                { friendly: 'Your account', dest: '#' },
+                { friendly: 'Activity log', dest: '#' },
+                { friendly: 'Sign out', dest: '#' }
+            ];
+            const menuItems = options.map((opt) => {
+                return(
+                    <li className="pure-menu-item">
+                        <a href={opt.dest} className={['pure-menu-link', styles.accountMenuLink].join(' ')}>
+                            {opt.friendly}
+                        </a>
+                    </li>
+                );
+            });
+            menuList = (
+                <ul className={["pure-menu-list", styles.accountMenuList].join(' ')}>
+                    {menuItems}
+                </ul>
+            );
+        }
         if (this.props.username) {
             return(
                 <div className={styles.accountMenu}>
@@ -30,6 +53,9 @@ const UserAccountMenu = React.createClass({
                         <i className={["fa", "fa-caret-square-o-down", styles.inlineIcon].join(' ')}></i>
                         {this.props.username}
                     </button>
+                    <div className="pure-menu">
+                        {menuList}
+                    </div>
                 </div>
             );
         } else return(<div/>);
