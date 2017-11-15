@@ -7,19 +7,6 @@ import styles from './styles.css'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
-const IndexStyles = {
-    tableStyle: {
-        marginTop: '5px',
-        marginBottom: '5px',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        width: '100%'
-    },
-    inlineIconStyle: {
-        paddingRight: '3px'
-    }
-};
-
 var ErrorBar = React.createClass({
     propTypes: {
         lastError: PropTypes.string.isRequired
@@ -47,7 +34,7 @@ var LastUpdated = React.createClass({
                     <button style={{position: 'absolute', right: '0px', bottom: '0px'}}
                             className="pure-button"
                             onClick={this.props.onRefreshClicked}>
-                        <i className="fa fa-refresh" style={IndexStyles.inlineIconStyle}></i>
+                        <i className={["fa", "fa-refresh", styles.inlineIcon].join(' ')}></i>
                         refresh
                     </button>
                 </div>
@@ -243,7 +230,8 @@ var BooksTable = React.createClass({
                                   lastModifiedDate={this.state.lastModifiedDate}
                                   onRefreshClicked={this.onRefreshClicked}/>
                 </div>
-                <table className="pure-table pure-table-horizontal" style={IndexStyles.tableStyle}>
+                <div style={{height: '10px'}}/>
+                <table className="pure-table pure-table-horizontal">
                     <thead>
                         <tr>
                             <th>Book title</th>
