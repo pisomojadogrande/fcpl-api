@@ -1,8 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
-import { Layout, LayoutStyles } from './layout'
+import { Layout } from './layout'
 import { SpinnerSubmitButton } from './controls'
+import styles from './styles.css'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
@@ -143,7 +144,7 @@ var SignIn = React.createClass({
                     <label htmlFor="newPasswordAgain">Password (again)</label>
                     <input id="newPasswordAgain" type="password" onChange={this.onNewPasswordAgainChange} placeholder="Password"/>
                     
-                    <label style={LayoutStyles.warningTextStyle}>{this.state.passwordWarning}</label>
+                    <label className={styles.warning}>{this.state.passwordWarning}</label>
                 </fieldset>
             );
         } else {
@@ -155,14 +156,14 @@ var SignIn = React.createClass({
         var errorBar = '';
         if (this.state.lastError) {
             errorBar = (
-                <div style={LayoutStyles.errorBarStyle}>
+                <div className={styles.errorBar}>
                     <h3>{this.state.lastError}</h3>
                 </div>
             );
         }
         return(
-            <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
-                <div style={LayoutStyles.centerFormStyle}>
+            <div className={["pure-u-1", styles.centerModal].join(' ')}>
+                <div className={styles.centerForm}>
                     <form className="pure-form pure-form-stacked">
                         <fieldset>
                             {errorBar}

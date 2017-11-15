@@ -3,54 +3,6 @@ import ReactDOM from 'react-dom'
 
 import styles from './styles.css'
 
-export const LayoutStyles = {
-    titlebarStyle: {
-        backgroundColor: 'lawngreen',
-        color: 'midnightblue',
-        width: '100%',
-        textAlign: 'center',
-        position: 'relative'
-    },
-    sidebarStyle: { 
-        backgroundColor: 'purple',
-        color: 'white'
-    },
-    accountMenuStyle: {
-        position: 'absolute',
-        right: '0px',
-        top: '0px',
-        margin: '10px',
-        padding: '5px',
-        backgroundColor: 'midnightblue',
-        color: 'lawngreen'
-    },
-    
-    // FIXME move the rest of these to styles.css
-    centerModalStyle: {
-        backgroundColor: 'navy',
-        height: '600px'
-    },
-    centerFormStyle: {
-        backgroundColor: 'white',
-        position: 'absolute',
-        width: '300px',
-        height: 'auto',
-        left: '50%',
-        marginLeft: '-150px',
-        marginTop: '50px',
-        padding: '10px'
-    },
-    warningTextStyle: {
-        color: 'red'
-    },
-    errorBarStyle: {
-        backgroundColor: '#c90014',
-        color: 'white',
-        width: '100%',
-        paddingLeft: '5px',
-        marginTop: '10px'
-    }
-}; 
 
 export const Layout = React.createClass({
     getInitialState: function() {
@@ -60,19 +12,19 @@ export const Layout = React.createClass({
     render: function() {
         return (
             <div className="pure-g">
-                <div className="pure-u-1" style={LayoutStyles.titlebarStyle}>
+                <div className={["pure-u-1", styles.titlebar].join(' ')}>
                     <h1>Your Books</h1>
-                    <div style={LayoutStyles.accountMenuStyle}>
+                    <div className={styles.accountMenu}>
                         <i className={["fa", "fa-caret-square-o-down", styles.inlineIcon].join(' ')}></i>
                         your_name_here
                     </div>
                 </div>
-                <div className="pure-u-1-8" style={LayoutStyles.sidebarStyle}>
+                <div className={["pure-u-1-8", styles.sidebar].join(' ')}>
                 </div>
                 <div className="pure-u-3-4">
                     {this.props.children}
                 </div>
-                <div className="pure-u-1-8" style={LayoutStyles.sidebarStyle}>
+                <div className={["pure-u-1-8", styles.sidebar].join(' ')}>
                 </div>
             </div>
         )

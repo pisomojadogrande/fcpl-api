@@ -1,7 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { Layout, LayoutStyles } from './layout'
+import { Layout } from './layout'
 import { SpinnerSubmitButton } from './controls'
+
+import styles from './styles.css'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
@@ -89,9 +91,9 @@ var AccountSetup = React.createClass({
         const displayError = this.state.lastError ? 'block' : 'none';
 
         return( 
-            <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
-                <div style={LayoutStyles.centerFormStyle}>
-                    <div style={LayoutStyles.errorBarStyle} display={displayError}>
+            <div className={["pure-u-1", styles.centerModal].join(' ')}>
+                <div className={styles.centerForm}>
+                    <div className={styles.errorBar} display={displayError}>
                         <h3>{this.state.lastError}</h3>
                     </div>
                     <form className="pure-form pure-form-stacked">

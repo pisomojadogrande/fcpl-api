@@ -1,7 +1,9 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { Layout, LayoutStyles } from './layout'
+import { Layout } from './layout'
 import { SpinnerSubmitButton } from './controls'
+
+import styles from './styles.css'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
@@ -128,7 +130,7 @@ var SignUp = React.createClass({
         var errorBar = '';
         if (this.state.lastError) {
             errorBar = (
-                <div style={LayoutStyles.errorBarStyle}>
+                <div className={styles.errorBar}>
                     <h3>{this.state.lastError}</h3>
                 </div>
             );
@@ -139,8 +141,8 @@ var SignUp = React.createClass({
                                      (this.state.warning.length > 0) ||
                                      !!this.state.cognitoUser;
         return(
-            <div className="pure-u-1" style={LayoutStyles.centerModalStyle}>
-                <div style={LayoutStyles.centerFormStyle}>
+            <div className={["pure-u-1", styles.centerModal].join(' ')}>
+                <div className={styles.centerForm}>
                     <form className="pure-form pure-form-stacked">
                         <fieldset>
                             {errorBar}
@@ -164,7 +166,7 @@ var SignUp = React.createClass({
                             <input id="passwordAgain" type="password" onChange={this.onPasswordAgainChange} placeholder="Repeat password"/>
                             <span className="pure-form-message">required</span>
                         
-                            <label style={LayoutStyles.warningTextStyle}>{this.state.warning}</label>
+                            <label className={styles.warning}>{this.state.warning}</label>
                             <SpinnerSubmitButton loading={this.state.loading}
                                                  disabled={submitButtonDisabled}
                                                  submitButtonText='Sign up'
