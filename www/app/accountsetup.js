@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout } from './layout'
-import { SpinnerSubmitButton } from './controls'
+import { ErrorBar, SpinnerSubmitButton } from './controls'
 
 import styles from './styles.css'
 
@@ -66,7 +66,7 @@ var AccountSetup = React.createClass({
             if (this.status == 200) {
                 window.location = './index.html';
             } else {
-                finishPutUserError('Error setting up account: ' + this.responseText);
+                that.finishPutUserError("Error setting up account:\n" + this.responseText);
             }
         });
         req.addEventListener('error', function(e) {
@@ -93,9 +93,7 @@ var AccountSetup = React.createClass({
         return( 
             <div className={["pure-u-1", styles.centerModal].join(' ')}>
                 <div className={styles.centerForm}>
-                    <div className={styles.errorBar} display={displayError}>
-                        <h3>{this.state.lastError}</h3>
-                    </div>
+                    <ErrorBar lastError={this.state.lastError}/>
                     <form className="pure-form pure-form-stacked">
                         <fieldset>
                             <legend>
