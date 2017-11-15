@@ -6,7 +6,8 @@ export const LayoutStyles = {
         backgroundColor: 'lawngreen',
         color: 'midnightblue',
         width: '100%',
-        textAlign: 'center'
+        textAlign: 'center',
+        position: 'relative'
     },
     sidebarStyle: { 
         backgroundColor: 'purple',
@@ -48,6 +49,20 @@ export const Layout = React.createClass({
             <div className="pure-g">
                 <div className="pure-u-1" style={LayoutStyles.titlebarStyle}>
                     <h1>Your Books</h1>
+                    <div style={{position: 'absolute',
+                                 right: '0px',
+                                 top: '0px',
+                                 margin: '10px',
+                                 padding: '5px',
+                                 backgroundColor: 'yellow'}}>
+                        <div className="pure-menu">
+                            <span className="pure-menu-heading">your_name</span>
+                            <ul className="pure-menu-list">
+                                <li className="pure-menu-item"><a href="#" className="pure-menu-link">Foo</a></li>
+                                <li className="pure-menu-item"><a href="#" className="pure-menu-link">Bar</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
                 <div className="pure-u-1-8" style={LayoutStyles.sidebarStyle}>
                 </div>
