@@ -49,7 +49,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
-      chunks: ['styles', 'layout', 'index'],
+      chunks: ['layout', 'index'],
       template: __dirname + '/app/index.html',
       filename: 'index.html'
     }),

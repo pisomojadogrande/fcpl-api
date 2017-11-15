@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
+import styles from './styles.css'
+
 export const LayoutStyles = {
     titlebarStyle: {
         backgroundColor: 'lawngreen',
@@ -13,6 +15,17 @@ export const LayoutStyles = {
         backgroundColor: 'purple',
         color: 'white'
     },
+    accountMenuStyle: {
+        position: 'absolute',
+        right: '0px',
+        top: '0px',
+        margin: '10px',
+        padding: '5px',
+        backgroundColor: 'midnightblue',
+        color: 'lawngreen'
+    },
+    
+    // FIXME move the rest of these to styles.css
     centerModalStyle: {
         backgroundColor: 'navy',
         height: '600px'
@@ -49,19 +62,9 @@ export const Layout = React.createClass({
             <div className="pure-g">
                 <div className="pure-u-1" style={LayoutStyles.titlebarStyle}>
                     <h1>Your Books</h1>
-                    <div style={{position: 'absolute',
-                                 right: '0px',
-                                 top: '0px',
-                                 margin: '10px',
-                                 padding: '5px',
-                                 backgroundColor: 'yellow'}}>
-                        <div className="pure-menu">
-                            <span className="pure-menu-heading">your_name</span>
-                            <ul className="pure-menu-list">
-                                <li className="pure-menu-item"><a href="#" className="pure-menu-link">Foo</a></li>
-                                <li className="pure-menu-item"><a href="#" className="pure-menu-link">Bar</a></li>
-                            </ul>
-                        </div>
+                    <div style={LayoutStyles.accountMenuStyle}>
+                        <i className={["fa", "fa-caret-square-o-down", styles.inlineIcon].join(' ')}></i>
+                        your_name_here
                     </div>
                 </div>
                 <div className="pure-u-1-8" style={LayoutStyles.sidebarStyle}>
