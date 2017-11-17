@@ -637,19 +637,8 @@ Resources:
         Type: "AWS::Lambda::Function"
         Properties:
             Code:
-                ZipFile: |
-                    const ACAO_HEADERS = {
-                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-                        'Access-Control-Allow-Methods': 'GET,OPTIONS',
-                        'Access-Control-Allow-Origin': '*'
-                    };
-                    exports.handler = (event, context, callback) => {
-                        console.log(JSON.stringify(event));
-                        callback(null, {
-                            headers: ACAO_HEADERS,
-                            statusCode: 200
-                        });
-                    };
+                S3Bucket: !Ref S3Bucket
+                S3Key: "functions/UnsubscribeUser/code.zip"
             Handler: index.handler
             Role: !GetAtt UnsubscribeUserExecutionRole.Arn
             Runtime: nodejs6.10
