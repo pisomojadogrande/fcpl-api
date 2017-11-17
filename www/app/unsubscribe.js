@@ -20,7 +20,10 @@ class Unsubscribe extends React.Component {
             const unsubscribeUrl = this.props.endpoint +
                                    '/user/' +
                                    this.props.userId +
-                                   '/unsubscribe';
+                                   '/unsubscribe?expires=' +
+                                   this.props.expires +
+                                   '&hash=' +
+                                   this.props.hash;
             fetch(unsubscribeUrl, {method: 'POST'}).then((res) => {
                 this.setState({
                     loading: false

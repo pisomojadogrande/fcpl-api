@@ -9,14 +9,14 @@ const ACAO_HEADERS = {
 function hasExpired(expires) {
     const expiresEpoch = parseInt(expires);
     const nowEpoch = (new Date()).getTime() / 1000;
-    console.log(`Now is ${nowEpoch}; expires ${expiresEpoch}`);
+    console.log(`Now is ${nowEpoch}; expires ${expiresEpoch}, ${expiresEpoch - nowEpoch} from now`);
     return (nowEpoch > expiresEpoch);
 }
 
-function validateHash(params) {
-    const expectedHash = unsubscribe.hashUnsubscribe(params.userId, params.expires);
-    console.log(`Hash values: expected ${expectedHash} actual ${params.hash}`);
-    return (expectedHash == params.hash);
+function validateHash(userId, expires, hash) {
+    const expectedHash = unsubscribe.hashUnsubscribe(userId, expires);
+    console.log(`Hash values: expected ${expectedHash} actual ${hash}`);
+    return (expectedHash == hash);
 }
 
 function completeCallback(callback, statusCode, body) {
@@ -37,14 +37,17 @@ function completeError(callback, error) {
 
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
-    if (!(event.queryStringParameters &&
-          event.queryStringParameters.userId &&
+    if (!(event.pathParameters &&
+          event.pathParameters.userId &&
+          event.queryStringParameters &&
           event.queryStringParameters.expires &&
           event.queryStringParameters.hash)) {
         completeError(callback, 'Missing parameters');
     } else if (hasExpired(event.queryStringParameters.expires)) {
         completeError(callback, 'Link has expired');
-    } else if (!validateHash(event.queryStringParameters)) {
+    } else if (!validateHash(event.pathParameters.userId,
+                             event.queryStringParameters.expires,
+                             event.queryStringParameters.hash)) {
         completeError(callback, 'Invalid request');
     } else {
         completeSuccess(callback);
