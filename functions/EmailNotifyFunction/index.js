@@ -45,7 +45,7 @@ function messageBodyFromInput(items) {
 function unsubscribeLine(userId) {
     const expires = Math.round((new Date()).getTime() / 1000) + LINK_EXPIRATION_SECONDS;
     const hash = unsubscribe.hashUnsubscribe(userId, expires);
-    const line = `(Not yet implemented:) Want to stop receiving these notifications?  Follow this link: ${WEB_ENDPOINT}/unsubscribe?userId=${userId}&expires=${expires}&hash=${hash}`;
+    const line = `Want to stop receiving these notifications?  Follow this link: ${WEB_ENDPOINT}/unsubscribe?userId=${userId}&expires=${expires}&hash=${hash}`;
     console.log(line);
     return line;
 }
@@ -57,6 +57,9 @@ exports.handler = (event, context, callback) => {
         !event.currentUser || !event.currentUser.identityId || !event.currentUser.email) {
         console.error(`Malformed input ${JSON.stringify(event)}`);
         callback('Bad input');
+    } else if (event.currentUser.notifications != 'EMAIL') {
+        console.log(`User ${event.currentUser.identityId} (${event.currentUser.email}) does not want email notifications`);
+        callback(null, {notifications: event.currentUser.notifications});
     } else {
         const sender = FROM_ADDRESS;
         const userEmail = event.currentUser.email;

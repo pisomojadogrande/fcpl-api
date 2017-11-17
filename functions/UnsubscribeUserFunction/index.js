@@ -1,3 +1,8 @@
+const AWS = require('aws-sdk');
+
+const ddb = new AWS.DynamoDB();
+const TABLE_NAME = process.env.UserTableName;
+
 const unsubscribe = require('./unsubscribe.js');
 
 const ACAO_HEADERS = {
@@ -17,6 +22,32 @@ function validateHash(userId, expires, hash) {
     const expectedHash = unsubscribe.hashUnsubscribe(userId, expires);
     console.log(`Hash values: expected ${expectedHash} actual ${hash}`);
     return (expectedHash == hash);
+}
+
+function updateUserPromise(userId) {
+    return new Promise((resolve, reject) => {
+        const params = {
+            TableName: TABLE_NAME,
+            Key: {
+                IdentityId: {
+                    S: userId
+                }
+            },
+            ConditionExpression: 'attribute_exists(IdentityId)',
+            ExpressionAttributeValues: {
+                ':none': {
+                    S: 'NONE'
+                }
+            },
+            UpdateExpression: 'SET Notifications = :none'
+        };
+        ddb.updateItem(params, (err, data) => {
+            if (err) reject(err);
+            else {
+                resolve(data);
+            }
+        })
+    });
 }
 
 function completeCallback(callback, statusCode, body) {
@@ -50,6 +81,12 @@ exports.handler = (event, context, callback) => {
                              event.queryStringParameters.hash)) {
         completeError(callback, 'Invalid request');
     } else {
-        completeSuccess(callback);
+        updateUserPromise(event.pathParameters.userId).then((result) => {
+            console.log(`Update succeeded for ${event.pathParameters.userId}: ${JSON.stringify(result)}`);
+            completeSuccess(callback);
+        }).catch((err) => {
+            console.error(`DynamoDB error for ${event.pathParameters.userId}: ${err}`);
+            completeError(callback, 'Update failed');
+        })
     }
 };

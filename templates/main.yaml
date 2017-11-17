@@ -650,6 +650,7 @@ Resources:
             Environment:
                 Variables:
                     SecretHashKey: !Ref SecretHashKey
+                    UserTableName: !Ref UserTable
             Handler: index.handler
             Role: !GetAtt UnsubscribeUserExecutionRole.Arn
             Runtime: nodejs6.10

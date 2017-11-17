@@ -9,7 +9,7 @@ exports.handler = (event, context, callback) => {
     const scanParams = {
         TableName: tableName,
         Select: "SPECIFIC_ATTRIBUTES",
-        ProjectionExpression: 'IdentityId, Email, LibraryCardNumber, LibraryPassword',
+        ProjectionExpression: 'IdentityId, Email, LibraryCardNumber, LibraryPassword, Notifications',
         Limit: 1,
         ReturnConsumedCapacity: 'TOTAL'
     };
@@ -32,8 +32,12 @@ exports.handler = (event, context, callback) => {
                     identityId: item.IdentityId.S,
                     libraryCardNumber: item.LibraryCardNumber.S,
                     libraryPassword: item.LibraryPassword.S,
-                    email: item.Email.S
+                    email: item.Email.S,
+                    notifications: 'EMAIL'
                 };
+                if (item.Notifications) {
+                    result.notifications = item.Notifications.S;
+                }
             } else {
                 result = {
                     done: true

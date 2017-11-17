@@ -25,13 +25,17 @@ class Unsubscribe extends React.Component {
                                    '&hash=' +
                                    this.props.hash;
             fetch(unsubscribeUrl, {method: 'POST'}).then((res) => {
-                this.setState({
+                const newState = {
                     loading: false
-                });
+                };
+                if (res.status != 200) {
+                    newState.error = "We weren't able to unsubscribe you; please try again later"
+                }
+                this.setState(newState);
             }).catch((err) => {
                 this.setState({
                     loading: false,
-                    error: "We weren't able to unsubscribe you"
+                    error: "Unexpected error"
                 });
             });
         }
