@@ -15,6 +15,9 @@ Parameters:
     NotificationSenderEmailAddress:
         Type: String
         Description: Auto-renewal notifications will be sent from this email address
+    SecretHashKey:
+        Type: String
+        Description: Provide a base-64 encoded key for computing hash values in one-click URLs
 Resources:
     UserPool:
         Type: "AWS::Cognito::UserPool"
@@ -639,6 +642,9 @@ Resources:
             Code:
                 S3Bucket: !Ref S3Bucket
                 S3Key: "functions/UnsubscribeUser/code.zip"
+            Environment:
+                Variables:
+                    SecretHashKey: !Ref SecretHashKey
             Handler: index.handler
             Role: !GetAtt UnsubscribeUserExecutionRole.Arn
             Runtime: nodejs6.10

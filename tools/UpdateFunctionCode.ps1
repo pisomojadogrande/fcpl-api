@@ -12,6 +12,7 @@ function UpdateFunctionCode(
    }
    $zipFile = Join-Path $codePath "code.zip"
    $indexJsPath = Join-Path $codePath "index.js"
+   $libPath = Join-Path $codePath "../lib/*"
    $nodeModules = Join-Path $codePath "node_modules"
    if (-Not (Test-Path $indexJsPath)) {
       echo "Missing $indexJsPath"
@@ -25,6 +26,7 @@ function UpdateFunctionCode(
       Compress-Archive -Path $nodeModules -DestinationPath $zipFile
    }
    Compress-Archive -Path $indexJsPath -DestinationPath $zipFile -Update
+   Compress-Archive -Path $libPath -DestinationPath $zipFile -Update
    
    $s3key = "functions/" + $function + "/code.zip"
    $s3path = "s3://" + $s3bucket + "/" + $s3key
