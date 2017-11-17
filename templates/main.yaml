@@ -18,6 +18,9 @@ Parameters:
     SecretHashKey:
         Type: String
         Description: Provide a base-64 encoded key for computing hash values in one-click URLs
+    WebEndpoint:
+        Type: String
+        Description: Endpoint for the web app, e.g. https://www.example.com
 Resources:
     UserPool:
         Type: "AWS::Cognito::UserPool"
@@ -579,6 +582,8 @@ Resources:
             Environment:
                 Variables:
                     FromAddress: !Ref NotificationSenderEmailAddress
+                    SecretHashKey: !Ref SecretHashKey
+                    WebEndpoint: !Ref WebEndpoint
             Handler: index.handler
             Role: !GetAtt EmailNotifyExecutionRole.Arn
             Runtime: nodejs6.10

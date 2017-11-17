@@ -1,6 +1,12 @@
 const AWS = require('aws-sdk');
 const SES = new AWS.SES();
 
+const unsubscribe = require('./unsubscribe.js');
+
+const FROM_ADDRESS = process.env.FromAddress;
+const WEB_ENDPOINT = process.env.WebEndpoint;
+const LINK_EXPIRATION_SECONDS = 3600 * 24 * 7;
+
 function subjectLineFromInput(items) {
     const numSuccesses = items.filter((item) => {
         return item.success;
@@ -36,18 +42,28 @@ function messageBodyFromInput(items) {
     return successfulRenewalsText + "\n\n" + failedRenewalsText;
 }
 
+function unsubscribeLine(userId) {
+    const expires = Math.round((new Date()).getTime() / 1000) + LINK_EXPIRATION_SECONDS;
+    const hash = unsubscribe.hashUnsubscribe(userId, expires);
+    const line = `(Not yet implemented:) Want to stop receiving these notifications?  Follow this link: ${WEB_ENDPOINT}/unsubscribe?userId=${userId}&expires=${expires}&hash=${hash}`;
+    console.log(line);
+    return line;
+}
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
     if (!event.autoRenewResult || !event.autoRenewResult.items ||
-        !event.currentUser || !event.currentUser.email) {
+        !event.currentUser || !event.currentUser.identityId || !event.currentUser.email) {
         console.error(`Malformed input ${JSON.stringify(event)}`);
         callback('Bad input');
     } else {
-        const sender = process.env.FromAddress;
+        const sender = FROM_ADDRESS;
         const userEmail = event.currentUser.email;
         const subjectLine = subjectLineFromInput(event.autoRenewResult.items);
-        const messageBody = messageBodyFromInput(event.autoRenewResult.items);
+        const messageBody = messageBodyFromInput(event.autoRenewResult.items) +
+                            "\n" +
+                            unsubscribeLine(event.currentUser.identityId);
         const params = {
             Source: sender,
             Destination: {
