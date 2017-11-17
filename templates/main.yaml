@@ -184,11 +184,67 @@ Resources:
                     method.response.header.Access-Control-Allow-Headers: false
                     method.response.header.Access-Control-Allow-Methods: false
                     method.response.header.Access-Control-Allow-Origin: false
+    FcplApiUserIdResource:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ParentId: !Ref FcplApiUserResource
+            PathPart: "{userId}"
+    FcplApiUserIdUnsubscribeResource:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ParentId: !Ref FcplApiUserIdResource
+            PathPart: unsubscribe
+    FcplApiUserIdUnsubscribePost:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            AuthorizationType: NONE
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiUserIdUnsubscribeResource
+            HttpMethod: POST
+            Integration:
+                IntegrationHttpMethod: POST
+                Type: AWS_PROXY
+                Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UnsubscribeUserFunction.Arn}/invocations
+    FcplApiUserIdUnsubscribeOptions:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            AuthorizationType: NONE
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiUserIdUnsubscribeResource
+            HttpMethod: OPTIONS
+            Integration:
+                IntegrationResponses:
+                    - StatusCode: 200
+                      ResponseParameters:
+                        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                        method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+                      ResponseTemplates:
+                        application/json: ''
+                PassthroughBehavior: WHEN_NO_MATCH
+                RequestTemplates:
+                    application/json: '{"statusCode": 200}'
+                Type: MOCK
+            MethodResponses:
+                - StatusCode: 200
+                  ResponseModels:
+                    application/json: 'Empty'
+                  ResponseParameters:
+                    method.response.header.Access-Control-Allow-Headers: false
+                    method.response.header.Access-Control-Allow-Methods: false
+                    method.response.header.Access-Control-Allow-Origin: false
     FcplApiDeployment:
         Type: "AWS::ApiGateway::Deployment"
         DependsOn:
             - FcplApiBooksGet
             - FcplApiBooksOptions
+            - FcplApiUserGet
+            - FcplApiUserOptions
+            - FcplApiUserPost
+            - FcplApiUserIdUnsubscribeOptions
+            - FcplApiUserIdUnsubscribePost
         Properties:
             RestApiId: !Ref FcplApi
             Description: Test deployment
@@ -311,12 +367,16 @@ Resources:
                     Statement:
                         - Effect: Allow
                           Action:
-                            - "lambda:InvokeFunction"
-                          Resource: !GetAtt GetBooksFunction.Arn
-                        - Effect: Allow
-                          Action:
                             - "dynamodb:PutItem"
                           Resource: !GetAtt UserTable.Arn
+                - PolicyName: GetBooksInvokeAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "lambda:InvokeFunction"
+                          Resource: !GetAtt GetBooksFunction.Arn
     PutUserFunction:
         Type: "AWS::Lambda::Function"
         Properties:
@@ -338,7 +398,6 @@ Resources:
             FunctionName: !Ref PutUserFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user"
-    
     AutoRenewerStateMachineRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -552,6 +611,56 @@ Resources:
                 - Arn: !Ref AutoRenewerStateMachine
                   Id: AutoRenewerStateMachineScheduleTarget
                   RoleArn: !GetAtt AutoRenewerStateMachineScheduleRuleRole.Arn
+    UnsubscribeUserExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                - PolicyName: UserTableAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:UpdateItem"
+                          Resource: !GetAtt UserTable.Arn
+    UnsubscribeUserFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                ZipFile: |
+                    const ACAO_HEADERS = {
+                        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                        'Access-Control-Allow-Methods': 'GET,OPTIONS',
+                        'Access-Control-Allow-Origin': '*'
+                    };
+                    exports.handler = (event, context, callback) => {
+                        console.log(JSON.stringify(event));
+                        callback(null, {
+                            headers: ACAO_HEADERS,
+                            statusCode: 200
+                        });
+                    };
+            Handler: index.handler
+            Role: !GetAtt UnsubscribeUserExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 30
+    UnsubscribeUserApiPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref UnsubscribeUserFunction
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user/*/unsubscribe"
 Outputs:
     UserPoolProviderName:
         Value: !GetAtt UserPool.ProviderName
@@ -577,4 +686,6 @@ Outputs:
         Value: !Ref AutoRenewerFunction
     EmailNotifyFunctionName:
         Value: !Ref EmailNotifyFunction
+    UnsubscribeUserFunctionName:
+        Value: !Ref UnsubscribeUserFunction
         
