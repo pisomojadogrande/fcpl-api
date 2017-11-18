@@ -3,6 +3,10 @@ body {
     color: #02547D;
 }
 
+h3 {
+    color: #02547D;    
+}
+
 .accountMenu {
     position: absolute;
     right: 0px;
@@ -71,7 +75,7 @@ body {
 }
 
 .centerModal {
-    background-color: #0284A8;
+    background-color: #02547D;
     height: 600px;
 }
 

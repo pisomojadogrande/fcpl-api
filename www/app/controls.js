@@ -48,7 +48,7 @@ export const SpinnerSubmitButton = React.createClass({
             <div>
                 <button type="submit"
                         disabled={submitButtonDisabled}
-                        className="pure-button pure-button-primary"
+                        className={["pure-button", styles.button].join(' ')}
                         style={{marginTop: "10px"}}
                         onClick={this.props.onClick}>
                     {this.props.submitButtonText}
