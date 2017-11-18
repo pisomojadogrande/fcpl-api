@@ -26,7 +26,7 @@ const UserAccountMenu = React.createClass({
         if (this.state.showMenu) {
             const linkClass = ["pure-menu-link", styles.accountMenuLink].join(' ');
             const options = [
-                { friendly: 'Your account', dest: '#' },
+                { friendly: 'Your account', dest: './account.html' },
                 { friendly: 'Activity log', dest: '#' },
                 { friendly: 'Sign out', dest: './signin.html' }
             ];

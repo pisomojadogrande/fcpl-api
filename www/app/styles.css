@@ -1,3 +1,9 @@
+body,html {
+    background-color: #E1F7E7;
+    color: #02547D;
+    height: 100%;
+}
+
 .accountMenu {
     position: absolute;
     right: 0px;
@@ -10,21 +16,21 @@
 
 .accountMenuButton {
     font-size: 85%;
-    background: midnightblue;
-    color: lawngreen;
+    background: #A9E8DC;
+    color: #02547D;
     width: 100%;
     text-align: left;
     border-radius: 0px;
 }
 
 .accountMenuLink {
-    background: midnightblue;
-    color: yellow;
+    background: #A9E8DC;
+    color: #02547D;
 }
 
 .accountMenuLink:hover {
-    background: lawngreen;
-    color: midnightblue;
+    background: #02547D;
+    color: #A9E8DC;
 }
 
 .accountMenuList {
@@ -32,8 +38,29 @@
     border-color: midnightblue;
 }
 
+.booksTable {
+    width: 100%;
+    border: 1px solid #02547D;
+}
+
+.booksTable td {
+    border-bottom: 1px solid #02547D;
+}
+
+.booksTable thead {
+    background-color: #02547D;
+    color: #A9E8DC;
+}
+
+.button {
+    background: #0284A8;
+    color: #E1F7E7;
+    border-radius: 4px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);    
+}
+
 .centerForm {
-    background-color: white;
+    background-color: #E1F7E7;
     position: absolute;
     width: 300px;
     height: auto;
@@ -44,7 +71,7 @@
 }
 
 .centerModal {
-    background-color: navy;
+    background-color: #0284A8;
     height: 600px;
 }
 
@@ -62,13 +89,12 @@
 }
 
 .sidebar {
-    background-color: purple;
-    color: white;
+    background-color: #02547D;
 }
 
 .titlebar {
-    background-color: lawngreen;
-    color: midnightblue;
+    background-color: #02547D;
+    color: #A9E8DC;
     width: 100%;
     text-align: center;
     position: relative

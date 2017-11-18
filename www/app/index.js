@@ -32,7 +32,7 @@ var LastUpdated = React.createClass({
                 <div style={{position: 'relative', height: '36px'}}>
                     <a style={{position: 'absolute', bottom: '0px'}}>{lastUpdated}</a>
                     <button style={{position: 'absolute', right: '0px', bottom: '0px'}}
-                            className="pure-button"
+                            className={[styles.button, "pure-button"].join(' ')}
                             onClick={this.props.onRefreshClicked}>
                         <i className={["fa", "fa-refresh", styles.inlineIcon].join(' ')}></i>
                         refresh
@@ -218,7 +218,7 @@ var BooksTable = React.createClass({
                                   onRefreshClicked={this.onRefreshClicked}/>
                 </div>
                 <div style={{height: '10px'}}/>
-                <table className="pure-table pure-table-horizontal" style={{width: '100%'}}>
+                <table className={["pure-table", "pure-table-horizontal", styles.booksTable].join(' ')}>
                     <thead>
                         <tr>
                             <th>Book title</th>
