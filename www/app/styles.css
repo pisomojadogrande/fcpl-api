@@ -1,7 +1,6 @@
-body,html {
+body {
     background-color: #E1F7E7;
     color: #02547D;
-    height: 100%;
 }
 
 .accountMenu {
@@ -41,6 +40,7 @@ body,html {
 .booksTable {
     width: 100%;
     border: 1px solid #02547D;
+    margin-bottom: 25px;
 }
 
 .booksTable td {
@@ -90,6 +90,7 @@ body,html {
 
 .sidebar {
     background-color: #02547D;
+    min-height: 400px;
 }
 
 .titlebar {
