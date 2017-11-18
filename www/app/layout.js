@@ -98,6 +98,11 @@ export const Layout = React.createClass({
                     <div className={["pure-u-1-8", styles.sidebar].join(' ')}>
                     </div>
                 </div>
+                <div className="pure-g">
+                    <div className={["pure-u-1", styles.titlebar].join(' ')}
+                         style={{height: '75px'}}>
+                    </div>
+                </div>
             </div>
         )
     }
