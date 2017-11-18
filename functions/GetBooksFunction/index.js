@@ -23,10 +23,7 @@ function latestKey(cachePrefix) {
     return cachePrefix + '/latest.json';
 }
 
-function fetchFromCachePromise(ctx, forceRefresh) {
-    if (forceRefresh) {
-        return Promise.resolve(ctx);
-    }
+function fetchFromCachePromise(ctx) {
     return new Promise((resolve, reject) =>  {
         const params = {
             Bucket: S3_BUCKET,
@@ -65,11 +62,17 @@ function putInCachePromise(ctx, cachePrefix) {
     const isContentChanged = !(ctx.cachedETag && (ctx.cachedETag == md5));
     if (!isContentChanged) {
         console.log(`Cached content matches etag ${md5}`);
+    } else {
+        console.log(`Cached etag ${ctx.cachedETag}; new md5 ${md5}`);
     }
     
     return new Promise((resolve, reject) => {
-        // write to both latest.html and a timestamped key;
-        // the timestamped key only if something has changed
+        // Write to both latest.json and a timestamped key;
+        // the timestamped key only if something has changed.
+        //
+        // Even if nothing has changed, we write to latest.json
+        // here so that it will have an up-to-date timestamp.
+        
         const keys = [latestKey(ctx.cachePrefix)];
         if (isContentChanged) {
             keys.push(`${ctx.cachePrefix}/${(new Date()).toISOString()}.json`);  
@@ -363,12 +366,15 @@ exports.handler = (event, context, callback) => {
     }
     ctx.cachePrefix = 'cache/' + ctx.libraryCardNumber;
       
-    fetchFromCachePromise(ctx, forceRefresh).then((ctx) => {
-        if (ctx.items) return Promise.resolve(ctx);
-        else return obtainSessionPromise(ctx)
+    fetchFromCachePromise(ctx).then((ctx) => {
+        if (ctx.items && !forceRefresh) {
+            return Promise.resolve(ctx);
+        } else {
+            return obtainSessionPromise(ctx)
                         .then(fetchHtmlPromise)
                         .then(parseHtmlPromise)
                         .then(putInCachePromise);
+        }
     }).then((ctx) => {
         var result = {
             libraryItems: ctx.items,
