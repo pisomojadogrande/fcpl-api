@@ -662,6 +662,22 @@ Resources:
             FunctionName: !Ref UnsubscribeUserFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user/*/unsubscribe"
+    EventTable:
+        Type: "AWS::DynamoDB::Table"
+        Properties:
+            AttributeDefinitions:
+                - AttributeName: IdentityId
+                  AttributeType: S
+                - AttributeName: Timestamp
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: IdentityId
+                  KeyType: HASH
+                - AttributeName: Timestamp
+                  KeyType: RANGE
+            ProvisionedThroughput:
+                ReadCapacityUnits: 1
+                WriteCapacityUnits: 1
 Outputs:
     UserPoolProviderName:
         Value: !GetAtt UserPool.ProviderName
@@ -689,4 +705,8 @@ Outputs:
         Value: !Ref EmailNotifyFunction
     UnsubscribeUserFunctionName:
         Value: !Ref UnsubscribeUserFunction
+    UserTable:
+        Value: !Ref UserTable
+    EventTable:
+        Value: !Ref EventTable
         
