@@ -260,6 +260,13 @@ Resources:
             StageName: test
             RestApiId: !Ref FcplApi
             DeploymentId: !Ref FcplApiDeployment
+    BooksCacheBucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            NotificationConfiguration:
+                LambdaConfigurations:
+                    - Event: "s3:ObjectCreated:Put"
+                      Function: !GetAtt BooksCacheBucketUpdatedFunction.Arn
     GetBooksExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -311,6 +318,69 @@ Resources:
             FunctionName: !Ref GetBooksFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/books"
+    BooksCacheBucketUpdatedExecutionRole:
+        Type: "AWS::IAM::Role"
+        Metadata:
+            Comment: |
+                The S3BucketAccess policy below is overly permissive (Resource: *) because
+                CloudFormation sees it as a circular dependency if you try to reference the
+                specific bucket resource (BooksCacheBucket).  That's specifically because the
+                AWS::S3::Bucket resource references the Lambda function (which, in turn, references
+                this role) in its NotificationConfiguration property.  Haven't figured out a
+                workaround.
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                - PolicyName: S3BucketAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "s3:GetObject"
+                            - "s3:ListBucket"
+                          Resource: "*"
+                - PolicyName: EventTableAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:PutItem"
+                          Resource: !GetAtt EventTable.Arn
+    BooksCacheBucketUpdatedFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                ZipFile: |
+                    exports.handler = (event, context, callback) => {
+                        console.log(JSON.stringify(event));
+                        callback(null, event);
+                    };
+            Environment:
+                Variables:
+                    EventTableName: !Ref EventTable
+            Handler: index.handler
+            Role: !GetAtt BooksCacheBucketUpdatedExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 30
+    BooksCacheBucketUpdatedS3Permission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref BooksCacheBucketUpdatedFunction
+            Principal: "s3.amazonaws.com"
+            SourceAccount: !Ref AWS::AccountId
+            SourceArn: !GetAtt BooksCacheBucket.Arn
     GetUserExecutionRole:
         Type: "AWS::IAM::Role"
         Properties:
@@ -705,6 +775,8 @@ Outputs:
         Value: !Ref EmailNotifyFunction
     UnsubscribeUserFunctionName:
         Value: !Ref UnsubscribeUserFunction
+    BooksCacheBucket:
+        Value: !Ref BooksCacheBucket
     UserTable:
         Value: !Ref UserTable
     EventTable:
