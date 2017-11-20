@@ -289,11 +289,11 @@ Resources:
                           Action:
                             - "s3:GetObject"
                             - "s3:PutObject"
-                          Resource: !Sub "arn:aws:s3:::${S3Bucket}/cache/*"
+                          Resource: !Sub "${BooksCacheBucket.Arn}/*"
                         - Effect: Allow
                           Action:
                             - "s3:ListBucket"
-                          Resource: !Sub "arn:aws:s3:::${S3Bucket}"
+                          Resource: !GetAtt BooksCacheBucket.Arn
     GetBooksFunction:
         Type: "AWS::Lambda::Function"
         Properties:
@@ -303,8 +303,7 @@ Resources:
             Environment:
                 Variables:
                     FCPLHostname: !Ref FCPLHostname
-                    S3Bucket: !Ref S3Bucket
-                    CachePrefix: "cache/TEST"
+                    S3Bucket: !Ref BooksCacheBucket
                     MaxCacheAgeHours: !Ref MaxCacheAgeHours
                     UserTableName: !Ref UserTable
             Handler: index.handler

@@ -364,7 +364,7 @@ exports.handler = (event, context, callback) => {
         ctx.libraryPassword = event.currentUser.libraryPassword;
         console.log(`State machine: current user ${ctx.libraryCardNumber}`);
     }
-    ctx.cachePrefix = 'cache/' + ctx.libraryCardNumber;
+    ctx.cachePrefix = ctx.libraryCardNumber;
       
     fetchFromCachePromise(ctx).then((ctx) => {
         if (ctx.items && !forceRefresh) {
