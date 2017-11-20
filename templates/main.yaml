@@ -354,24 +354,22 @@ Resources:
                     Statement:
                         - Effect: Allow
                           Action:
+                            - "dynamodb:Query"
                             - "dynamodb:PutItem"
                           Resource: !GetAtt EventTable.Arn
     BooksCacheBucketUpdatedFunction:
         Type: "AWS::Lambda::Function"
         Properties:
             Code:
-                ZipFile: |
-                    exports.handler = (event, context, callback) => {
-                        console.log(JSON.stringify(event));
-                        callback(null, event);
-                    };
+                S3Bucket: !Ref S3Bucket
+                S3Key: "functions/BooksCacheBucketUpdated/code.zip"
             Environment:
                 Variables:
                     EventTableName: !Ref EventTable
             Handler: index.handler
             Role: !GetAtt BooksCacheBucketUpdatedExecutionRole.Arn
             Runtime: nodejs6.10
-            Timeout: 30
+            Timeout: 120
     BooksCacheBucketUpdatedS3Permission:
         Type: "AWS::Lambda::Permission"
         Properties:
@@ -735,12 +733,12 @@ Resources:
         Type: "AWS::DynamoDB::Table"
         Properties:
             AttributeDefinitions:
-                - AttributeName: IdentityId
+                - AttributeName: LibraryCardNumber
                   AttributeType: S
                 - AttributeName: Timestamp
                   AttributeType: S
             KeySchema:
-                - AttributeName: IdentityId
+                - AttributeName: LibraryCardNumber
                   KeyType: HASH
                 - AttributeName: Timestamp
                   KeyType: RANGE
@@ -776,6 +774,8 @@ Outputs:
         Value: !Ref UnsubscribeUserFunction
     BooksCacheBucket:
         Value: !Ref BooksCacheBucket
+    BooksCacheBucketUpdatedFunctionName:
+        Value: !Ref BooksCacheBucketUpdatedFunction
     UserTable:
         Value: !Ref UserTable
     EventTable:
