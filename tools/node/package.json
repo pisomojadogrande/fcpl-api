@@ -1,0 +1,8 @@
+{
+  "name": "fcpl-api-tools",
+  "version": "1.0.0",
+  "devDependencies": {
+    "aws-sdk": "^2.153.0",
+    "minimist": "^1.2.0"
+  }
+}
