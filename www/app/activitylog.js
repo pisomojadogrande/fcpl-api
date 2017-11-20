@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Layout } from './layout'
-import { ErrorBar } from './controls'
+import { StatusHeader } from './controls'
 import SignedInUser from './signedInUser'
 
 import styles from './styles.css'
@@ -11,7 +11,8 @@ class ActivityLog extends React.Component {
     signedInUser = new SignedInUser();
 
     state = {
-        loading: true
+        isLoading: true,
+        lastError: undefined
     };
 
     componentDidMount() {
@@ -19,6 +20,10 @@ class ActivityLog extends React.Component {
         this.signedInUser.authenticateOrRedirect(function(err, data) {
             if (err) {
                 console.error(err);
+                that.setState({
+                    isLoading: false,
+                    lastError: 'Error signing you in'
+                });
             } else {
                 console.log(`Signed in as ${data.cognitoUser.username}`);
             }
@@ -26,8 +31,27 @@ class ActivityLog extends React.Component {
     }
     
     render() {
+        const tableRows = '';
         return(
-            <div><h1>Nothing yet</h1></div>
+            <div>
+                <div className="pure-u-1-6"></div>
+                <div className="pure-u-2-3">
+                    <div style={{height: '25px'}}></div>
+                    <StatusHeader isLoading={this.state.isLoading}
+                                  lastError={this.state.lastError}/>
+                    <div style={{height: '10px'}}/>
+                    <table className={["pure-table", "pure-table-horizontal", styles.booksTable].join(' ')}>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>{tableRows}</tbody>
+                    </table>
+                </div>
+                <div className="pure-u-1-6"></div>
+            </div>
         );
     }
 }
