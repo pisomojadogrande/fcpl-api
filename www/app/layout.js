@@ -27,7 +27,7 @@ const UserAccountMenu = React.createClass({
             const linkClass = ["pure-menu-link", styles.accountMenuLink].join(' ');
             const options = [
                 { friendly: 'Your account', dest: './account.html' },
-                { friendly: 'Activity log', dest: '#' },
+                { friendly: 'Activity log', dest: './activitylog.html' },
                 { friendly: 'Sign out', dest: './signin.html' }
             ];
             const menuItems = options.map((opt) => {

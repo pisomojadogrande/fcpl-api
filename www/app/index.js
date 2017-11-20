@@ -2,75 +2,11 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
 import { Layout } from './layout'
+import { StatusHeader } from './controls'
 
 import styles from './styles.css'
 
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
-
-var ErrorBar = React.createClass({
-    propTypes: {
-        lastError: PropTypes.string.isRequired
-    },
-    render: function() {
-        return(
-            <div className={styles.errorBar}>
-                <h3>{this.props.lastError}</h3>
-            </div>
-        );
-    }
-});
-
-var LastUpdated = React.createClass({
-    propTypes: {
-        lastModifiedDate: PropTypes.instanceOf(Date).isRequired,
-        onRefreshClicked: PropTypes.func.isRequired
-    },
-    render: function() {
-        if (this.props.lastModifiedDate) {
-            const lastUpdated = 'Last updated: ' + this.props.lastModifiedDate.toLocaleString();
-            return (
-                <div style={{position: 'relative', height: '36px'}}>
-                    <a style={{position: 'absolute', bottom: '0px'}}>{lastUpdated}</a>
-                    <button style={{position: 'absolute', right: '0px', bottom: '0px'}}
-                            className={[styles.button, "pure-button"].join(' ')}
-                            onClick={this.props.onRefreshClicked}>
-                        <i className={["fa", "fa-refresh", styles.inlineIcon].join(' ')}></i>
-                        refresh
-                    </button>
-                </div>
-            );
-        } else {
-            return (<div></div>);
-        }
-    }
-});
-
-var Spinner = React.createClass({
-    render: function() {
-        return(
-            <div>
-                <i className="fa fa-refresh fa-spin fa-fw fa-2x" style={{float: 'right'}}></i>
-            </div>
-        );
-    }
-});
-
-var StatusHeader = React.createClass({
-    propTypes: {
-        isLoading: PropTypes.bool.isRequired,
-        lastError: PropTypes.string
-    },
-    render: function() {
-        if (this.props.lastError) {
-            return(<ErrorBar lastError={this.props.lastError}/>);
-        } else if (this.props.isLoading) {
-            return(<Spinner/>);
-        } else {
-            return(<LastUpdated lastModifiedDate={this.props.lastModifiedDate}
-                                onRefreshClicked={this.props.onRefreshClicked}/>);
-        }
-    }
-});
 
 var BooksTable = React.createClass({
     libraryCardNumber: undefined,

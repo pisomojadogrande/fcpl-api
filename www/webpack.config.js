@@ -9,10 +9,12 @@ module.exports = {
   entry: {
     account: './app/account.js',
     accountsetup: './app/accountsetup.js',
+    activitylog: './app/activitylog.js',
     controls: './app/controls.js',
     index: './app/index.js',
     layout: './app/layout.js',
     passwordreset: './app/passwordreset.js',
+    signedInUser: './app/signedInUser.js',
     signin: './app/signin.js',
     signup: './app/signup.js',
     styles: './app/styles.css',
@@ -54,6 +56,12 @@ module.exports = {
       chunks: ['layout', 'controls', 'accountsetup'],
       template: __dirname + '/app/accountsetup.html',
       filename: 'accountsetup.html'
+    }),
+    new HtmlWebpackPlugin({
+      inject: 'body',
+      chunks: ['layout', 'controls', 'activitylog'],
+      template: __dirname + '/app/activitylog.html',
+      filename: 'activitylog.html'
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
