@@ -83,6 +83,10 @@ h3 {
     text-align: center;
 }
 
+.errorBar h3 {
+    color: white;
+}
+
 .inlineIcon {
     padding-right: 5px;
 }

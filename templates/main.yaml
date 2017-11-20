@@ -241,6 +241,52 @@ Resources:
                     method.response.header.Access-Control-Allow-Headers: false
                     method.response.header.Access-Control-Allow-Methods: false
                     method.response.header.Access-Control-Allow-Origin: false
+    FcplApiUserActivityResource:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ParentId: !Ref FcplApiUserResource
+            PathPart: activity
+    FcplApiUserActivityGet:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiUserActivityResource
+            HttpMethod: GET
+            AuthorizationType: COGNITO_USER_POOLS
+            AuthorizerId: !Ref FcplApiAuthorizer
+            Integration:
+                IntegrationHttpMethod: POST
+                Type: AWS_PROXY
+                Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUserActivityFunction.Arn}/invocations
+    FcplApiUserActivityOptions:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            AuthorizationType: NONE
+            RestApiId: !Ref FcplApi
+            ResourceId: !Ref FcplApiUserActivityResource
+            HttpMethod: OPTIONS
+            Integration:
+                IntegrationResponses:
+                    - StatusCode: 200
+                      ResponseParameters:
+                        method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                        method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+                        method.response.header.Access-Control-Allow-Origin: "'*'"
+                      ResponseTemplates:
+                        application/json: ''
+                PassthroughBehavior: WHEN_NO_MATCH
+                RequestTemplates:
+                    application/json: '{"statusCode": 200}'
+                Type: MOCK
+            MethodResponses:
+                - StatusCode: 200
+                  ResponseModels:
+                    application/json: 'Empty'
+                  ResponseParameters:
+                    method.response.header.Access-Control-Allow-Headers: false
+                    method.response.header.Access-Control-Allow-Methods: false
+                    method.response.header.Access-Control-Allow-Origin: false
     FcplApiDeployment:
         Type: "AWS::ApiGateway::Deployment"
         DependsOn:
@@ -729,6 +775,57 @@ Resources:
             FunctionName: !Ref UnsubscribeUserFunction
             Principal: "apigateway.amazonaws.com"
             SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user/*/unsubscribe"
+    GetUserActivityExecutionRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                        Service:
+                            - lambda.amazonaws.com
+                      Action: "sts:AssumeRole"
+            ManagedPolicyArns:
+                - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+            Policies:
+                - PolicyName: EventTableAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:query"
+                          Resource: !GetAtt EventTable.Arn
+                - PolicyName: UserTableAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:getItem"
+                          Resource: !GetAtt UserTable.Arn
+    GetUserActivityFunction:
+        Type: "AWS::Lambda::Function"
+        Properties:
+            Code:
+                S3Bucket: !Ref S3Bucket
+                S3Key: "functions/GetUserActivity/code.zip"
+            Environment:
+                Variables:
+                    EventTableName: !Ref EventTable
+                    UserTableName: !Ref UserTable
+            Handler: index.handler
+            Role: !GetAtt GetUserActivityExecutionRole.Arn
+            Runtime: nodejs6.10
+            Timeout: 30
+    GetUserActivityApiPermission:
+        Type: "AWS::Lambda::Permission"
+        Properties:
+            Action: "lambda:InvokeFunction"
+            FunctionName: !Ref GetUserActivityFunction
+            Principal: "apigateway.amazonaws.com"
+            SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${FcplApi}/${FcplApiStage}/*/user/activity"
     EventTable:
         Type: "AWS::DynamoDB::Table"
         Properties:
@@ -772,6 +869,8 @@ Outputs:
         Value: !Ref EmailNotifyFunction
     UnsubscribeUserFunctionName:
         Value: !Ref UnsubscribeUserFunction
+    GetUserActivityFunctionName:
+        Value: !Ref GetUserActivityFunction
     BooksCacheBucket:
         Value: !Ref BooksCacheBucket
     BooksCacheBucketUpdatedFunctionName:
