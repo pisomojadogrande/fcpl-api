@@ -44,7 +44,6 @@ h3 {
 .booksTable {
     width: 100%;
     border: 1px solid #02547D;
-    margin-bottom: 25px;
 }
 
 .booksTable td {
@@ -61,6 +60,12 @@ h3 {
     color: #E1F7E7;
     border-radius: 4px;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);    
+}
+
+.buttonFullWidth {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    width: 100%;
 }
 
 .centerForm {

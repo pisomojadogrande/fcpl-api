@@ -164,6 +164,7 @@ var BooksTable = React.createClass({
                     </thead>
                     <tbody>{tableRows}</tbody>
                 </table>
+                <div style={{height: '25px'}}/>
             </div>
         );
     }

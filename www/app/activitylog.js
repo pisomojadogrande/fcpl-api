@@ -7,7 +7,11 @@ import SignedInUser from './signedInUser'
 
 import styles from './styles.css'
 
+const PAGE_SIZE = 20;
+
+
 class ActivityLog extends React.Component {
+    
     
     signedInUser = new SignedInUser();
 
@@ -35,7 +39,12 @@ class ActivityLog extends React.Component {
     }
     
     fetchUserActivity() {
-        const getUserActivityUrl = this.props.endpoint + '/user/activity?pageSize=15';
+        var getUserActivityUrl = this.props.endpoint + '/user/activity?pageSize=' + PAGE_SIZE;
+        if (this.state.nextContinuationToken) {
+            getUserActivityUrl += '&continuationToken=' +
+                encodeURIComponent(this.state.nextContinuationToken);
+        }
+        
         const headers = new Headers();
         headers.append('Authorization', this.signedInUser.jwtToken);
         const that = this;
@@ -52,7 +61,7 @@ class ActivityLog extends React.Component {
             console.log(`Retrieved ${result.events.length} events, continuation token ${result.nextContinuationToken}`);
             that.setState({
                 isLoading: false,
-                events: result.events,
+                events: that.state.events.concat(result.events),
                 nextContinuationToken: result.nextContinuationToken
             });
         }).catch((err) => {
@@ -83,14 +92,14 @@ class ActivityLog extends React.Component {
                 var itemNameCleaned = item.name.replace(/&nbsp;/g, '');
                 var wasDue = '';
                 if (item.previousDueDate) {
-                    wasDue = ` (was ${(new Date(item.previousDueDate)).toLocaleString()})`;
+                    wasDue = ` (was ${(new Date(item.previousDueDate)).toLocaleDateString()})`;
                 }
                 return(
                     <li>
                         <div>
                             {itemNameCleaned}
                             <br/>
-                            Due: {(new Date(item.dueDate)).toLocaleString()}{wasDue}
+                            Due: {(new Date(item.dueDate)).toLocaleDateString()}{wasDue}
                         </div>
                     </li>
                 );
@@ -102,6 +111,13 @@ class ActivityLog extends React.Component {
                 </div>
             );
         } else return '';
+    }
+    
+    onMoreButtonClick() {
+        this.setState({
+            isLoading: true
+        });
+        this.fetchUserActivity();
     }
     
     render() {
@@ -130,6 +146,20 @@ class ActivityLog extends React.Component {
                 </tr>
             );
         });
+        var moreButton = '';
+        if (this.state.nextContinuationToken) {
+            const buttonClasses = [styles.button, styles.buttonFullWidth];
+            if (this.state.isLoading) {
+                buttonClasses.push('pure-button-disabled');
+            }
+            moreButton = (
+                <button className={buttonClasses.join(' ')}
+                        style={{marginTop: '5px'}}
+                        onClick={this.onMoreButtonClick.bind(this)}>
+                    ...More...
+                </button>               
+            );
+        }
         return(
             <div>
                 <div className="pure-u-1-6"></div>
@@ -147,6 +177,8 @@ class ActivityLog extends React.Component {
                         </thead>
                         <tbody>{tableRows}</tbody>
                     </table>
+                    {moreButton}
+                    <div style={{height: '25px'}}/>
                 </div>
                 <div className="pure-u-1-6"></div>
             </div>
