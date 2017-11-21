@@ -5,13 +5,18 @@ const htmlparser = require('htmlparser');
 const AWS = require('aws-sdk');
 
 const s3 = new AWS.S3();
+const ddb = new AWS.DynamoDB();
 
 const S3_BUCKET = process.env.S3Bucket;
 const MAX_CACHED_AGE_SECS = 3600 * process.env.MaxCacheAgeHours;
 
 const FCPL_HOSTNAME = process.env.FCPLHostname;
 
+const EVENT_TABLE_NAME = process.env.EventTableName;
+
+const ERROR_INVALID_PARAMS = 'Invalid parameters'
 const ERROR_INVALID_LOGIN = 'Invalid login';
+const ERROR_NO_DATA_FOR_TIMESTAMP = 'No data is available for the specified timestamp';
 
 ACAO_HEADERS = {
     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
@@ -23,11 +28,53 @@ function latestKey(cachePrefix) {
     return cachePrefix + '/latest.json';
 }
 
+function getCacheKeyPromise(ctx) {
+    if (ctx.requestedTimestamp) {
+        return new Promise((resolve, reject) => {
+            console.log(`getCacheKey ${JSON.stringify(ctx)}`);
+            const params = {
+                TableName: EVENT_TABLE_NAME,
+                Select: 'SPECIFIC_ATTRIBUTES',
+                ScanIndexForward: false,
+                Limit: 1,
+                ExpressionAttributeNames: {
+                    '#ts': 'Timestamp'
+                },
+                ExpressionAttributeValues: {
+                    ':libraryCardNumber': { S: ctx.libraryCardNumber },
+                    ':requestedTimestamp': { S: ctx.requestedTimestamp.toISOString() }
+                },
+                ProjectionExpression: '#ts',
+                KeyConditionExpression: 'LibraryCardNumber = :libraryCardNumber AND #ts <= :requestedTimestamp'
+            };
+            ddb.query(params, (err, data) => {
+                console.log(`EventTable result ${JSON.stringify(data)} error ${err}`);
+                if (err) {
+                    console.error(`Error querying event table: ${err}`);
+                    reject(err);
+                } else {
+                    if (data.Items && (data.Items.length > 0)) {
+                        ctx.cacheKey = `${ctx.cachePrefix}/${data.Items[0].Timestamp.S}.json`;
+                        console.log(`Found nearest timestamp in cache at ${ctx.cacheKey}`);
+                        resolve(ctx);
+                    } else {
+                        reject({errorCode: ERROR_NO_DATA_FOR_TIMESTAMP});
+                    }
+                }
+            })
+        });    
+    } else {
+        ctx.cacheKey = latestKey(ctx.cachePrefix);
+        console.log(`No timestamp specified; using ${ctx.cacheKey} from the cache`);
+        return Promise.resolve(ctx);
+    }
+}
+
 function fetchFromCachePromise(ctx) {
     return new Promise((resolve, reject) =>  {
         const params = {
             Bucket: S3_BUCKET,
-            Key: latestKey(ctx.cachePrefix)
+            Key: ctx.cacheKey
         };
         console.log(`S3 request params ${JSON.stringify(params)}`);
         s3.getObject(params, (err, data) => {
@@ -42,10 +89,11 @@ function fetchFromCachePromise(ctx) {
                 const etag = data.ETag.replace(/"/g, '');
                 console.log(`Fetched ${data.ContentLength} bytes etag=${etag}, age ${ageMsec / 1000} sec; last modified ${data.LastModified}`);
                 ctx.cachedETag = etag;
-                if (ageMsec > (1000 * MAX_CACHED_AGE_SECS)) {
+                if (!ctx.requestedTimestamp && (ageMsec > (1000 * MAX_CACHED_AGE_SECS))) {
                     console.log('Content too old; fetching new');
                     resolve(ctx);
                 } else {
+                    console.log(`Using content read from ${ctx.cacheKey}`);
                     ctx.content = data.Body.toString();
                     ctx.items = JSON.parse(ctx.content);
                     ctx.lastModified = lastModified.toISOString();
@@ -310,8 +358,11 @@ function completeCallbackRestApi(callback, error, data) {
         headers: ACAO_HEADERS
     };
     if (error) {
-        if (error.errorCode == ERROR_INVALID_LOGIN) {
+        if ((error.errorCode == ERROR_INVALID_LOGIN) ||
+            (error.errorCode == ERROR_INVALID_PARAMS)) {
             result.statusCode = 400;
+        } else if (error.errorCode == ERROR_NO_DATA_FOR_TIMESTAMP) {
+            result.statusCode = 404;
         } else {
             result.statusCode = 500;
         }
@@ -342,6 +393,14 @@ function completeCallback(callback, error, data, resultOptions) {
     }
 }
 
+function completeCallbackInvalidParams(callback, message, resultOptions) {
+    const error = {
+        errorCode: ERROR_INVALID_PARAMS,
+        message: message
+    };
+    completeCallback(callback, error, null, resultOptions);    
+}
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     
@@ -356,6 +415,20 @@ exports.handler = (event, context, callback) => {
         ctx.libraryCardNumber = event.queryStringParameters.libraryCardNumber;
         ctx.libraryPassword = event.queryStringParameters.libraryPassword;
         console.log(`Using account from queryString ${ctx.libraryCardNumber}`);
+        if (event.queryStringParameters.at) {
+            if (forceRefresh) {
+                completeCallbackInvalidParams(callback, 'Cannot specify "forceRefresh" and "at" parameters together', resultOptions);
+                return;
+            }
+            const atEpoch = parseInt(event.queryStringParameters.at);
+            if (atEpoch) {
+                ctx.requestedTimestamp = new Date(atEpoch * 1000);
+                console.log(`Request for specific date ${ctx.requestedTimestamp.toISOString()}`);
+            } else {
+                completeCallbackInvalidParams(callback, 'Invalid value for "at" parameter; must be epoch time', resultOptions);
+                return;
+            }
+        }
     } else if (event.currentUser) {
         // Coming through the auto-renewer state machine
         forceRefresh = true;
@@ -364,9 +437,17 @@ exports.handler = (event, context, callback) => {
         ctx.libraryPassword = event.currentUser.libraryPassword;
         console.log(`State machine: current user ${ctx.libraryCardNumber}`);
     }
+    
+    if (!ctx.libraryCardNumber || !ctx.libraryPassword) {
+        completeCallbackInvalidParams(callback, 'libraryCardNumber and libraryPassword parameters are required', resultOptions);
+        return;
+    }
+    
     ctx.cachePrefix = ctx.libraryCardNumber;
       
-    fetchFromCachePromise(ctx).then((ctx) => {
+    getCacheKeyPromise(ctx)
+        .then(fetchFromCachePromise)
+        .then((ctx) => {
         if (ctx.items && !forceRefresh) {
             return Promise.resolve(ctx);
         } else {
@@ -385,6 +466,7 @@ exports.handler = (event, context, callback) => {
         }
         completeCallback(callback, null, result, resultOptions);
     }).catch((e) => {
+        console.error(`Caught error ${e}`);
         completeCallback(callback, e, null, resultOptions);
     });
  

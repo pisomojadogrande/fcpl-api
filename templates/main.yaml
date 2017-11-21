@@ -340,6 +340,14 @@ Resources:
                           Action:
                             - "s3:ListBucket"
                           Resource: !GetAtt BooksCacheBucket.Arn
+                - PolicyName: EventTableAccess
+                  PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                            - "dynamodb:Query"
+                          Resource: !GetAtt EventTable.Arn
     GetBooksFunction:
         Type: "AWS::Lambda::Function"
         Properties:
@@ -351,7 +359,7 @@ Resources:
                     FCPLHostname: !Ref FCPLHostname
                     S3Bucket: !Ref BooksCacheBucket
                     MaxCacheAgeHours: !Ref MaxCacheAgeHours
-                    UserTableName: !Ref UserTable
+                    EventTableName: !Ref EventTable
             Handler: index.handler
             Role: !GetAtt GetBooksExecutionRole.Arn
             Runtime: nodejs6.10
