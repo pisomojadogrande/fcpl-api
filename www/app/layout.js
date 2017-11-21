@@ -85,7 +85,7 @@ export const Layout = React.createClass({
             <div>
                 <div className="pure-g">
                     <div className={["pure-u-1", styles.titlebar].join(' ')}>
-                        <h1>Your Books</h1>
+                        <h1><a href='./index.html'>Your Books</a></h1>
                         <UserAccountMenu username={this.state.username}/>
                     </div>
                 </div>

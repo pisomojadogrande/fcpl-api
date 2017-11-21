@@ -109,6 +109,10 @@ h3 {
     position: relative
 }
 
+.titlebar h1 a {
+    color: #A9E8DC;    
+}
+
 .warning {
     color: red;
 }
