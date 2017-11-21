@@ -14,7 +14,8 @@ class ActivityLog extends React.Component {
     state = {
         isLoading: true,
         lastError: undefined,
-        events: []
+        events: [],
+        expandIndex: undefined
     };
 
     componentDidMount() {
@@ -70,12 +71,62 @@ class ActivityLog extends React.Component {
         return `${newItemsCount} new items; returned ${deletedItemsCount} items; ${changedItemsCount} items renewed`;
     }
     
-    render() {
-        const tableRows = this.state.events.map((event) => {
+    onTableRowClick(rowIndex) {
+        this.setState({
+           expandIndex: rowIndex
+        });
+    }
+    
+    expandList(heading, itemsList) {
+        if (itemsList && (itemsList.length > 0)) {
+            const listItems = itemsList.map((item) => {
+                var itemNameCleaned = item.name.replace(/&nbsp;/g, '');
+                var wasDue = '';
+                if (item.previousDueDate) {
+                    wasDue = ` (was ${(new Date(item.previousDueDate)).toLocaleString()})`;
+                }
+                return(
+                    <li>
+                        <div>
+                            {itemNameCleaned}
+                            <br/>
+                            Due: {(new Date(item.dueDate)).toLocaleString()}{wasDue}
+                        </div>
+                    </li>
+                );
+            });
             return(
-                <tr key={event.timestamp}>
-                    <td>{(new Date(event.timestamp)).toLocaleString()}</td>
-                    <td>{this.eventToChangeDescription(event)}</td>
+                <div>
+                    <b>{heading}</b>
+                    <ul>{listItems}</ul>
+                </div>
+            );
+        } else return '';
+    }
+    
+    render() {
+        const that = this;
+        const tableRows = this.state.events.map((event, rowIndex) => {
+            const onRowClick = function() {
+                that.onTableRowClick(rowIndex)
+            };
+            
+            var changeDescription = this.eventToChangeDescription(event);
+            if (rowIndex == this.state.expandIndex) {
+                changeDescription = (
+                    <div>
+                        {changeDescription}
+                        <div style={{height: '10px'}}/>
+                        {this.expandList('You took out:', event.newItems)}
+                        {this.expandList('You returned:', event.deletedItems)}
+                        {this.expandList('You renewed:', event.changedItems)}
+                    </div>
+                );
+            }
+            return(
+                <tr key={event.timestamp} onClick={onRowClick}>
+                    <td style={{width: '35%'}}>{(new Date(event.timestamp)).toLocaleString()}</td>
+                    <td>{changeDescription}</td>
                 </tr>
             );
         });
