@@ -10,6 +10,7 @@ module.exports = {
     account: './app/account.js',
     accountsetup: './app/accountsetup.js',
     activitylog: './app/activitylog.js',
+    booksTable: './app/booksTable.js',
     controls: './app/controls.js',
     index: './app/index.js',
     layout: './app/layout.js',
