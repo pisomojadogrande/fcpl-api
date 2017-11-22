@@ -50,6 +50,10 @@ h3 {
     border-bottom: 1px solid #02547D;
 }
 
+.booksTable td a {
+    color: #02547D;
+}
+
 .booksTable thead {
     background-color: #02547D;
     color: #A9E8DC;
@@ -99,6 +103,17 @@ h3 {
 .sidebar {
     background-color: #02547D;
     min-height: 400px;
+}
+
+.snapshotHeader {
+    background-color: #02547D;
+    color: #E1F7E7;
+    font-size: larger;
+    padding: 10px;
+    margin: 10px;
+    text-align: center;
+    border-style: solid;
+    border-color: #A9E8DC;
 }
 
 .titlebar {

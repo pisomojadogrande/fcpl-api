@@ -60,18 +60,22 @@ export const StatusHeader = React.createClass({
     propTypes: {
         isLoading: PropTypes.bool.isRequired,
         lastError: PropTypes.string,
+        showLastUpdated: PropTypes.bool,
         lastModifiedDate: PropTypes.instanceOf(Date),
         onRefreshClicked: PropTypes.func
+    },
+    defaultProps: {
+        showLastUpdated: true
     },
     render: function() {
         if (this.props.lastError) {
             return(<ErrorBar lastError={this.props.lastError}/>);
         } else if (this.props.isLoading) {
             return(<Spinner/>);
-        } else {
+        } else if (this.props.showLastUpdated) {
             return(<LastUpdated lastModifiedDate={this.props.lastModifiedDate}
                                 onRefreshClicked={this.props.onRefreshClicked}/>);
-        }
+        } else return(<div/>);
     }
 });
 

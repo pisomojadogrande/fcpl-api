@@ -8,6 +8,10 @@ import styles from './styles.css'
 const AmazonCognitoIdentity = require('amazon-cognito-identity-js');
 
 export const BooksTable = React.createClass({
+    propTypes: {
+        endpoint: PropTypes.string.isRequired,
+        timestamp: PropTypes.instanceOf(Date)
+    },
     libraryCardNumber: undefined,
     libraryPassword: undefined,
     userName: undefined,
@@ -110,6 +114,8 @@ export const BooksTable = React.createClass({
             + this.libraryPassword;
         if (forceRefresh) {
             url += '&forceRefresh=true';
+        } else if (this.props.timestamp) {
+            url += '&at=' + Math.round(this.props.timestamp.getTime() / 1000);
         }
         req.open('GET', url);
         req.send();
@@ -143,12 +149,15 @@ export const BooksTable = React.createClass({
             );
         });
         
+        const showLastUpdated = !this.props.timestamp;
+        
         return(
             <div>
                 <div style={{height: '10px'}}/>
                 <div>
                     <StatusHeader isLoading={this.state.isLoading}
                                   lastError={this.state.lastError}
+                                  showLastUpdated={showLastUpdated}
                                   lastModifiedDate={this.state.lastModifiedDate}
                                   onRefreshClicked={this.onRefreshClicked}/>
                 </div>

@@ -18,6 +18,7 @@ module.exports = {
     signedInUser: './app/signedInUser.js',
     signin: './app/signin.js',
     signup: './app/signup.js',
+    snapshot: './app/snapshot.js',
     styles: './app/styles.css',
     unsubscribe: './app/unsubscribe.js',
   },
@@ -87,6 +88,12 @@ module.exports = {
       chunks: ['layout', 'controls', 'signup'],
       template: __dirname + '/app/signup.html',
       filename: 'signup.html'
+    }),
+    new HtmlWebpackPlugin({
+      inject: 'body',
+      chunks: ['layout', 'snapshot'],
+      template: __dirname + '/app/snapshot.html',
+      filename: 'snapshot.html'
     }),
     new HtmlWebpackPlugin({
       inject: 'body',
