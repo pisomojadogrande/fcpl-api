@@ -182,7 +182,6 @@ function renewBooksPromiseWithRetries(currentUser, books, renewAction, retriesRe
             retriesRemaining--;
             console.error(`Failed to renew, retry=${retryOnFail}: ${err}`);
             if (retryOnFail) {
-                // Better way to do a recursive Promise??
                 renewBooksPromiseWithRetries(currentUser, books, renewAction, retriesRemaining).then((result) => {
                     resolve(result);
                 }).catch((err) => {
