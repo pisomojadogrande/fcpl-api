@@ -9,7 +9,7 @@ function populateAutoRenewResult(autoRenewResultItems, ddbItem) {
         if (!ddbItem[disposition]) {
             ddbItem[disposition] = { L: [] };
         }
-        ddbItem[disposition].push({ S: item.description.trim() });
+        ddbItem[disposition].L.push({ S: item.description.trim() });
     });
 }
 
