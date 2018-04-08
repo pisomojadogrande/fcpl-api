@@ -353,6 +353,13 @@ function parseHtmlPromise(ctx) {
     });
 }
 
+function fetchBooksFromLibraryAndCachePromise(ctx) {
+    return obtainSessionPromise(ctx)
+        .then(fetchHtmlPromise)
+        .then(parseHtmlPromise)
+        .then(putInCachePromise);
+}
+
 function completeCallbackRestApi(callback, error, data) {
     const result = {
         headers: ACAO_HEADERS
@@ -375,21 +382,27 @@ function completeCallbackRestApi(callback, error, data) {
     callback(null, result);    
 }
 
-function completeCallbackAsTask(callback, error, data) {
+function completeCallbackAsTask(context, callback, error, data) {
     if (error) {
-        console.error(`Completing task with error ${JSON.stringify(err)}`);
-        callback(error);
+        // Although the function completed in error, don't fail the Lambda
+        // function.  Instead, put the error on the output context.
+        console.error(`Completing task with error ${JSON.stringify(error)}`);
+        const errorResult = {
+            requestId: context.awsRequestId,
+            error
+        };
+        callback(null, errorResult);
     } else {
         console.log(`Completing task with result ${JSON.stringify(data)}`);
         callback(null, data);
     }
 }
 
-function completeCallback(callback, error, data, resultOptions) {
+function completeCallback(context, callback, error, data, resultOptions) {
     if (resultOptions.invokedAsRestApi) {
         completeCallbackRestApi(callback, error, data);
     } else {
-        completeCallbackAsTask(callback, error, data);
+        completeCallbackAsTask(context, callback, error, data);
     }
 }
 
@@ -451,10 +464,7 @@ exports.handler = (event, context, callback) => {
         if (ctx.items && !forceRefresh) {
             return Promise.resolve(ctx);
         } else {
-            return obtainSessionPromise(ctx)
-                        .then(fetchHtmlPromise)
-                        .then(parseHtmlPromise)
-                        .then(putInCachePromise);
+            return fetchBooksFromLibraryAndCachePromise(ctx);
         }
     }).then((ctx) => {
         var result = {
@@ -464,10 +474,10 @@ exports.handler = (event, context, callback) => {
         if (forceRefresh) {
             result.renewAction = ctx.renewAction;
         }
-        completeCallback(callback, null, result, resultOptions);
+        completeCallback(context, callback, null, result, resultOptions);
     }).catch((e) => {
-        console.error(`Caught error ${e}`);
-        completeCallback(callback, e, null, resultOptions);
+        console.error(`Caught error ${JSON.stringify(e)}`);
+        completeCallback(context, callback, e, null, resultOptions);
     });
  
 };
