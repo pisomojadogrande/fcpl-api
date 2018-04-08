@@ -204,9 +204,23 @@ function refreshGetBooksCachePromise(currentUser, passThroughResult) {
     });
 }
 
+function completeCallback(context, callback, err, items) {
+    const output = {
+        requestId: context.awsRequestId,
+        items: items || []
+    };
+    callback(err, output);
+}
+
 exports.handler = (event, context, callback) => {
     console.log(JSON.stringify(event));
     const getBooksResponse = event.getBooksResponse;
+    if (!getBooksResponse || !getBooksResponse.libraryItems) {
+        const getBooksRequestId = getBooksResponse ? getBooksResponse.requestId : 'UNKNOWN';
+        console.warn(`Bad-looking getBooksResponse; possible problem upstream.  RequestId ${getBooksRequestId}`);
+        return completeCallback(context, callback, null, []);
+    }
+    
     const renewAction = getBooksResponse.renewAction;
     const currentUser = event.currentUser;
 
@@ -225,11 +239,9 @@ exports.handler = (event, context, callback) => {
             return Promise.resolve(result);
         }
     }).then((result) => {
-        const output = {
-            items: result
-        };
-        callback(null, output);
+        completeCallback(context, callback, null, result);
     }).catch((e) => {
-        callback(e);
+        completeCallback(context, callback, e);
     });
 };
+
