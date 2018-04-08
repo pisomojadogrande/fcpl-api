@@ -44,7 +44,7 @@ exports.handler = (event, context, callback) => {
                 };
             }
             
-            callback(null, result);
+            callback(null, { currentUser: result });
         }
     });
 };

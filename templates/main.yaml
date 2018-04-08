@@ -562,7 +562,7 @@ Resources:
                         "IteratorState": {
                             "Type": "Task",
                             "Resource": "${UserIteratorStateFunction.Arn}",
-                            "ResultPath": "$.currentUser",
+                            "ResultPath": "$",
                             "Next": "DoneIteratingChoiceState"
                         },
                         "DoneIteratingChoiceState": {
