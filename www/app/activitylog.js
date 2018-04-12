@@ -139,12 +139,17 @@ class ActivityLog extends React.Component {
                     </div>
                 );
             }
+            
             const timestampDate = new Date(event.timestamp);
+            let timestampString = timestampDate.toLocaleString();
+            if (timestampString == 'Invalid Date') {
+                timestampString = event.timestamp;
+            }
             const snapshotRef = './snapshot.html?timestamp=' + Math.round(timestampDate.getTime() / 1000);
             return(
                 <tr key={event.timestamp} onClick={onRowClick}>
                     <td style={{width: '35%'}}>
-                        <a href={snapshotRef}>{timestampDate.toLocaleString()}</a>
+                        <a href={snapshotRef}>{timestampString}</a>
                     </td>
                     <td>{changeDescription}</td>
                 </tr>
