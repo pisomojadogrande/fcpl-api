@@ -82,6 +82,7 @@ var PasswordReset = React.createClass({
                 window.location = './signin.html';
             },
             onFailure: function(err) {
+                console.error(`forgotPassword failure: ${JSON.stringify(err)}`);
                 that.setState({
                     isLoading: false,
                     lastError: err
@@ -141,9 +142,10 @@ var PasswordReset = React.createClass({
         }
         var errorBar = '';
         if (this.state.lastError) {
+            const errorMessage = this.state.lastError.code || 'Unknown error';
             errorBar = (
                 <div className={styles.errorBar}>
-                    <h3>{this.state.lastError}</h3>
+                    <h3>{errorMessage}</h3>
                 </div>
             );
         }
