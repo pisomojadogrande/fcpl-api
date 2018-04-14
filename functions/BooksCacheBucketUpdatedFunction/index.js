@@ -213,7 +213,7 @@ function diffItemsToDDBList(diffItems) {
 }
 
 function recordDiffEventPromise(diffEvent) {
-    const matches = diffEvent.Key.match(/([0-9]+)\/(.*)\.json/);
+    const matches = diffEvent.Key.match(/([0-9]+)\/([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*Z)\.json/);
     if (!matches) {
         return Promise.resolve(`Rejecting invalid key ${diffEvent.Key}`);
     }
@@ -230,7 +230,8 @@ function recordDiffEventPromise(diffEvent) {
                 ETag: { S: diffEvent.ETag },
                 NewItems: { L: diffItemsToDDBList(diffEvent.Diff.NewItems) },
                 DeletedItems: { L: diffItemsToDDBList(diffEvent.Diff.DeletedItems) },
-                ChangedItems: { L: diffItemsToDDBList(diffEvent.Diff.ChangedItems) }
+                ChangedItems: { L: diffItemsToDDBList(diffEvent.Diff.ChangedItems) },
+                RecordedAt: { S: (new Date()).toISOString() }
             }
         };
         DDB.putItem(params, (err, data) => {
